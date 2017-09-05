@@ -1,0 +1,11 @@
+[package]
+name = "iv"
+version = "0.1.0"
+authors = ["foldu <foldu@protonmail.com>"]
+
+[dependencies]
+glib = "0.3.1"
+gdk = "0.6.0"
+gdk-pixbuf = "0.2.0"
+error-chain = "0.11.0-rc.2"
+gtk = "0.2.0"
