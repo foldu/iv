@@ -41,7 +41,10 @@ impl BottomBar {
         self.filename.set_text(text)
     }
 
-    pub fn set_zoom(&self, percent: Percent) {
-        self.zoom.set_text(&format!("{:.*}%", 2, percent * 100.))
+    pub fn set_zoom(&self, percent: Option<Percent>) {
+        match percent {
+            Some(percent) => self.zoom.set_text(&format!("{:.*}%", 2, percent * 100.)),
+            None => self.zoom.set_text(""),
+        }
     }
 }

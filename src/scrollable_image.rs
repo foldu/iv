@@ -1,6 +1,6 @@
 use gtk;
 use gtk::prelude::*;
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 
 pub struct ScrollableImage {
     scroll_view: gtk::ScrolledWindow,
@@ -18,6 +18,10 @@ impl ScrollableImage {
             scroll_view: scroll_view,
             image: image,
         }
+    }
+
+    pub fn set_from_animation(&self, buf: &PixbufAnimation) {
+        self.image.set_from_animation(buf)
     }
 
     pub fn set_from_pixbuf(&self, buf: &Pixbuf) {

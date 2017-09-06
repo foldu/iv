@@ -3,6 +3,7 @@ extern crate error_chain;
 extern crate gtk;
 extern crate gdk_pixbuf;
 extern crate gdk;
+extern crate gio;
 
 use std::process::exit;
 use std::path::{Path, PathBuf};
@@ -11,7 +12,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use gtk::prelude::*;
-use gdk_pixbuf::Pixbuf;
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gdk::enums::key;
 
 mod scrollable_image;
@@ -24,7 +25,12 @@ use errors::*;
 
 type Percent = f64;
 
-fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, Pixbuf)> {
+enum ImageKind {
+    Animated(PixbufAnimation),
+    Normal(Pixbuf),
+}
+
+fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind)> {
     let path_str = if let Some(path) = path.as_ref().to_str() {
         path
     } else {
@@ -32,7 +38,13 @@ fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, Pixbuf)> {
                       path.as_ref().to_string_lossy()));
     };
 
-    let pixbuf = Pixbuf::new_from_file(&path_str)?;
+    let (mime_guess, result_certain) = gio::content_type_guess(path_str, &[]);
+
+    let ret = if mime_guess == "image/gif" {
+        ImageKind::Animated(PixbufAnimation::new_from_file(&path_str)?)
+    } else {
+        ImageKind::Normal(Pixbuf::new_from_file(&path_str)?)
+    };
 
     let filename = path.as_ref()
         .file_name()
@@ -40,7 +52,8 @@ fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, Pixbuf)> {
         .to_str()
         .unwrap()
         .to_owned();
-    Ok((filename, pixbuf))
+
+    Ok((filename, ret))
 }
 
 type V2 = (i32, i32);
@@ -218,19 +231,28 @@ impl Viewer {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
                 self.bottom.set_filename(&filename);
-                self.img.set_from_pixbuf(&pixbuf);
-                self.cur_original_pixbuf = Some(pixbuf);
+
+                match pixbuf {
+                    ImageKind::Animated(anim) => {
+                        self.img.set_from_animation(&anim);
+                        self.cur_original_pixbuf = None;
+                        self.bottom.set_zoom(None);
+                    }
+                    ImageKind::Normal(img) => {
+                        self.img.set_from_pixbuf(&img);
+                        self.cur_original_pixbuf = Some(img);
+                    }
+                }
                 self.bottom.set_err("");
-                self.bottom.set_zoom(100.);
                 self.scale_to_fit_current();
                 Ok(())
             }
             Err(e) => {
                 self.cur_original_pixbuf = None;
-                self.bottom.set_filename("");
-                self.bottom.set_zoom(0.);
-                self.bottom.set_err(e.description());
-                bail!("");
+                // self.bottom.set_filename("");
+                // self.bottom.set_zoom(0.);
+                // self.bottom.set_err(e.description());
+                Err(e)
             }
         }
     }
@@ -255,7 +277,7 @@ impl Viewer {
 
     fn set_zoom_info(&mut self, percent: Percent) {
         self.cur_ratio = percent;
-        self.bottom.set_zoom(percent);
+        self.bottom.set_zoom(Some(percent));
     }
 
     fn original_size(&mut self) {
