@@ -4,8 +4,6 @@ extern crate gtk;
 extern crate gdk_pixbuf;
 extern crate gdk;
 
-// TODO: clean up this scrapheap
-
 use std::process::exit;
 use std::path::{Path, PathBuf};
 use std::env::args_os;
@@ -16,14 +14,12 @@ use gtk::prelude::*;
 use gdk_pixbuf::Pixbuf;
 use gdk::enums::key;
 
-mod errors {
-    error_chain!{
-        foreign_links {
-            GtkError(::gtk::Error);
-        }
-    }
-}
+mod scrollable_image;
+mod bottom_bar;
+mod errors;
 
+use scrollable_image::{ScrollableImage, ScrollT};
+use bottom_bar::BottomBar;
 use errors::*;
 
 type Percent = f64;
@@ -81,130 +77,10 @@ fn next_zoom_stage(mut percent: Percent, zoom_opt: Zoom) -> Percent {
     }
 }
 
-struct Bar {
-    boxx: gtk::Box,
-    errtext: gtk::Label,
-    filename: gtk::Label,
-    zoom: gtk::Label,
-}
-
-impl Bar {
-    fn new() -> Bar {
-        let errtext = gtk::Label::new(None);
-        let filename = gtk::Label::new(None);
-        let zoom = gtk::Label::new(None);
-        let boxx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        boxx.pack_start(&errtext, true, false, 0);
-        boxx.pack_start(&filename, true, false, 0);
-        boxx.pack_end(&zoom, true, false, 0);
-        boxx.set_valign(gtk::Align::End);
-        Bar {
-            boxx: boxx,
-            errtext: errtext,
-            filename: filename,
-            zoom: zoom,
-        }
-    }
-
-    fn as_widget(&self) -> &gtk::Box {
-        &self.boxx
-    }
-
-    fn set_err(&self, err: &str) {
-        self.errtext.set_text(err)
-    }
-
-    fn set_filename(&self, text: &str) {
-        self.filename.set_text(text)
-    }
-
-    fn set_zoom(&self, percent: Percent) {
-        self.zoom.set_text(&format!("{:.*}%", 2, percent * 100.))
-    }
-}
-
-struct ScrollableImage {
-    scroll_view: gtk::ScrolledWindow,
-    image: gtk::Image,
-}
-
-impl ScrollableImage {
-    fn new() -> ScrollableImage {
-        let scroll_view = gtk::ScrolledWindow::new(None, None);
-        let image = gtk::Image::new();
-        scroll_view.add(&image);
-        scroll_view.get_hscrollbar().map(|scroll| scroll.set_visible(false));
-        scroll_view.get_vscrollbar().map(|scroll| scroll.set_visible(false));
-        ScrollableImage {
-            scroll_view: scroll_view,
-            image: image,
-        }
-    }
-
-    fn set_from_pixbuf(&self, buf: &Pixbuf) {
-        self.image.set_from_pixbuf(buf)
-    }
-
-    fn as_widget(&self) -> &gtk::ScrolledWindow {
-        &self.scroll_view
-    }
-
-    fn get_allocation(&self) -> gtk::Allocation {
-        self.scroll_view.get_allocation()
-    }
-
-    fn scroll(&self, scroll: ScrollT) {
-        match scroll {
-            ScrollT::Up | ScrollT::Down | ScrollT::StartV | ScrollT::EndV => {
-                if let Some(vadjust) = self.scroll_view.get_vadjustment() {
-                    match scroll {
-                        ScrollT::Up => {
-                            vadjust.set_value(vadjust.get_value() - vadjust.get_step_increment())
-                        }
-                        ScrollT::Down => {
-                            vadjust.set_value(vadjust.get_value() + vadjust.get_step_increment())
-                        }
-                        ScrollT::StartV => vadjust.set_value(vadjust.get_lower()),
-                        ScrollT::EndV => vadjust.set_value(vadjust.get_upper()),
-                        _ => (),
-                    }
-                }
-            }
-            ScrollT::Left | ScrollT::Right | ScrollT::StartH | ScrollT::EndH => {
-                if let Some(hadjust) = self.scroll_view.get_hadjustment() {
-                    match scroll {
-                        ScrollT::Left => {
-                            hadjust.set_value(hadjust.get_value() - hadjust.get_step_increment())
-                        }
-                        ScrollT::Right => {
-                            hadjust.set_value(hadjust.get_value() + hadjust.get_step_increment())
-                        }
-                        ScrollT::StartH => hadjust.set_value(hadjust.get_lower()),
-                        ScrollT::EndH => hadjust.set_value(hadjust.get_upper()),
-                        _ => (),
-                    }
-                }
-            }
-        }
-    }
-}
-
-// gtk scrolltype is missing things
-enum ScrollT {
-    Up,
-    Down,
-    Left,
-    Right,
-    StartV,
-    EndV,
-    StartH,
-    EndH,
-}
-
 struct Viewer {
     win: gtk::Window,
     img: ScrollableImage,
-    bottom: Bar,
+    bottom: BottomBar,
     layout: gtk::Box,
     image_paths: Vec<PathBuf>,
     index: usize,
@@ -230,7 +106,7 @@ impl Viewer {
 
 
         let img = ScrollableImage::new();
-        let bottom = Bar::new();
+        let bottom = BottomBar::new();
         let layout = gtk::Box::new(gtk::Orientation::Vertical, 0);
         layout.pack_start(img.as_widget(), true, true, 0);
         layout.pack_end(bottom.as_widget(), false, false, 0);
@@ -323,18 +199,21 @@ impl Viewer {
         let tmp = self.index + 1;
         if tmp < self.image_paths.len() {
             self.index = tmp;
-            self.show_image();
+            if self.show_image().is_err() {
+                self.image_paths.remove(self.index);
+                self.next();
+            }
         }
     }
 
     fn prev(&mut self) {
         if self.index != 0 {
             self.index -= 1;
-            self.show_image();
+            let _ = self.show_image();
         }
     }
 
-    fn show_image(&mut self) {
+    fn show_image(&mut self) -> Result<()> {
         match load_image(&self.image_paths[self.index]) {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
@@ -344,11 +223,14 @@ impl Viewer {
                 self.bottom.set_err("");
                 self.bottom.set_zoom(100.);
                 self.scale_to_fit_current();
+                Ok(())
             }
             Err(e) => {
                 self.cur_original_pixbuf = None;
                 self.bottom.set_filename("");
+                self.bottom.set_zoom(0.);
                 self.bottom.set_err(e.description());
+                bail!("");
             }
         }
     }
