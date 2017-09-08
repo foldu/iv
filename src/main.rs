@@ -5,10 +5,12 @@ extern crate gdk_pixbuf;
 extern crate gdk;
 extern crate gio;
 extern crate pango;
+extern crate clap;
 
 use std::process::exit;
-use std::env::args_os;
 use std::path::PathBuf;
+
+use clap::{App, Arg};
 
 mod scrollable_image;
 mod bottom_bar;
@@ -23,7 +25,20 @@ fn main() {
         exit(1);
     }
 
-    let images: Vec<_> = args_os().skip(1).map(|s| PathBuf::from(s)).collect();
+    let opt = App::new("iv")
+        .version(env!("CARGO_PKG_VERSION"))
+        .author(env!("CARGO_PKG_AUTHORS"))
+        .about("It views images")
+        .arg(Arg::with_name("IMAGES")
+                 .help("The images you want to view, skips things that are not images")
+                 .required(true)
+                 .multiple(true))
+        .get_matches();
+
+    let images: Vec<_> = opt.values_of_os("IMAGES")
+        .unwrap()
+        .map(|s| PathBuf::from(s))
+        .collect();
 
     let app = Viewer::new(images);
 

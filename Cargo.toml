@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["foldu <foldu@protonmail.com>"]
 
 [dependencies]
+clap = "2.26.0"
 pango = "0.2.0"
 gio = "0.2.0"
 glib = "0.3.1"
