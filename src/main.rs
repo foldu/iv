@@ -73,7 +73,7 @@ fn main() {
             .collect()
     };
 
-    let app = Viewer::new(images, opt.is_present("status"));
+    let app = Viewer::new(images, !opt.is_present("status"));
 
     app.borrow_mut().show_all();
 

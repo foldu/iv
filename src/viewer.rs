@@ -101,7 +101,7 @@ pub struct Viewer {
 }
 
 impl Viewer {
-    pub fn new(image_paths: Vec<PathBuf>, hide_status: bool) -> Rc<RefCell<Viewer>> {
+    pub fn new(image_paths: Vec<PathBuf>, show_status: bool) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
         win.set_title("iv");
 
@@ -135,7 +135,7 @@ impl Viewer {
                                            index: 0,
                                            cur_original_pixbuf: None,
                                            cur_ratio: 0.,
-                                           show_status: !hide_status,
+                                           show_status: show_status,
                                        }));
         let ret_conn = ret.clone();
 
