@@ -1,3 +1,17 @@
+mod keymap;
+
+pub struct Viewer {
+    win: gtk::Window,
+    img: ScrollableImage,
+    bottom: BottomBar,
+    _layout: gtk::Box,
+    image_paths: Vec<PathBuf>,
+    index: usize,
+    cur_original_pixbuf: Option<Pixbuf>,
+    cur_ratio: Percent,
+    show_status: bool,
+}
+
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -7,10 +21,9 @@ use gtk::prelude::*;
 use gdk_pixbuf;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
 use gdk::ScreenExt;
-use gdk::enums::key;
 use gio;
 
-use scrollable_image::{ScrollableImage, ScrollT};
+use scrollable_image::ScrollableImage;
 use bottom_bar::BottomBar;
 use errors::*;
 
@@ -88,18 +101,6 @@ fn next_zoom_stage(mut percent: Percent, zoom_opt: Zoom) -> Percent {
     }
 }
 
-pub struct Viewer {
-    win: gtk::Window,
-    img: ScrollableImage,
-    bottom: BottomBar,
-    _layout: gtk::Box,
-    image_paths: Vec<PathBuf>,
-    index: usize,
-    cur_original_pixbuf: Option<Pixbuf>,
-    cur_ratio: Percent,
-    show_status: bool,
-}
-
 impl Viewer {
     pub fn new(image_paths: Vec<PathBuf>, show_status: bool) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -135,86 +136,24 @@ impl Viewer {
                                            index: 0,
                                            cur_original_pixbuf: None,
                                            cur_ratio: 0.,
-                                           show_status: show_status,
+                                           show_status: !show_status,
                                        }));
-        let ret_conn = ret.clone();
+        // let ret_conn = ret.clone();
 
-        ret.borrow_mut().win.connect_key_press_event(move |_, key_event| {
-            match key_event.get_keyval() {
-                key::q => {
-                    gtk::main_quit();
-                    Inhibit(false)
-
-                }
-                key::n => {
-                    ret_conn.borrow_mut().next();
-                    Inhibit(true)
-                }
-                key::p => {
-                    ret_conn.borrow_mut().prev();
-                    Inhibit(true)
-                }
-                key::equal => {
-                    ret_conn.borrow_mut().scale_to_fit_current();
-                    Inhibit(true)
-                }
-                key::o => {
-                    ret_conn.borrow_mut().original_size();
-                    Inhibit(true)
-                }
-                key::w => {
-                    ret_conn.borrow_mut().resize_to_fit_image();
-                    Inhibit(true)
-                }
-                key::W => {
-                    ret_conn.borrow_mut().resize_to_fit_screen();
-                    Inhibit(true)
-                }
-                key::minus => {
-                    ret_conn.borrow_mut().zoom_out();
-                    Inhibit(true)
-                }
-                key::plus => {
-                    ret_conn.borrow_mut().zoom_in();
-                    Inhibit(true)
-                }
-                key::j => {
-                    ret_conn.borrow().img.scroll(ScrollT::Down);
-                    Inhibit(true)
-                }
-                key::k => {
-                    ret_conn.borrow().img.scroll(ScrollT::Up);
-                    Inhibit(true)
-                }
-                key::h => {
-                    ret_conn.borrow().img.scroll(ScrollT::Left);
-                    Inhibit(true)
-                }
-                key::l => {
-                    ret_conn.borrow().img.scroll(ScrollT::Right);
-                    Inhibit(true)
-                }
-                key::g => {
-                    ret_conn.borrow().img.scroll(ScrollT::StartV);
-                    Inhibit(true)
-                }
-                key::G => {
-                    ret_conn.borrow().img.scroll(ScrollT::EndV);
-                    Inhibit(true)
-                }
-                key::_0 => {
-                    ret_conn.borrow().img.scroll(ScrollT::StartH);
-                    Inhibit(true)
-                }
-                key::dollar => {
-                    ret_conn.borrow().img.scroll(ScrollT::EndH);
-                    Inhibit(true)
-                }
-                _ => Inhibit(false),
-            }
-        });
+        Viewer::setup_keys(&ret);
+        // ret.borrow_mut().win.connect_key_press_event(move |_, key_event| {
+        // });
 
         ret
+    }
+
+    fn toggle_status(&mut self) {
+        self.show_status = !self.show_status;
+        if self.show_status {
+            self.bottom.as_widget().show();
+        } else {
+            self.bottom.as_widget().hide();
+        }
     }
 
     fn next(&mut self) {
@@ -243,9 +182,6 @@ impl Viewer {
     }
 
     fn show_image(&mut self) -> Result<()> {
-        if !self.show_status {
-            self.bottom.as_widget().hide();
-        }
         match load_image(&self.image_paths[self.index]) {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
@@ -361,9 +297,13 @@ impl Viewer {
 
     pub fn show_all(&mut self) {
         self.win.show_all();
+        if self.show_status {
+            self.toggle_status()
+        }
         if self.image_paths.len() != 0 {
             if self.show_image().is_err() {
                 self.next();
+                self.image_paths.remove(0); // FIXME: displayed index wrong
             }
         }
     }
