@@ -41,6 +41,7 @@ fn main() {
                  .help("Traverse arguments recursively (enters directories)")
                  .short("r")
                  .long("recursive"))
+        .arg(Arg::with_name("status").help("Hide bottom status bar").short("s").long("status-hide"))
         .get_matches();
 
     let images: Vec<_> = if opt.is_present("recursive") {
@@ -72,7 +73,7 @@ fn main() {
             .collect()
     };
 
-    let app = Viewer::new(images);
+    let app = Viewer::new(images, opt.is_present("status"));
 
     app.borrow_mut().show_all();
 

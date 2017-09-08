@@ -97,10 +97,11 @@ pub struct Viewer {
     index: usize,
     cur_original_pixbuf: Option<Pixbuf>,
     cur_ratio: Percent,
+    show_status: bool,
 }
 
 impl Viewer {
-    pub fn new(image_paths: Vec<PathBuf>) -> Rc<RefCell<Viewer>> {
+    pub fn new(image_paths: Vec<PathBuf>, hide_status: bool) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
         win.set_title("iv");
 
@@ -134,6 +135,7 @@ impl Viewer {
                                            index: 0,
                                            cur_original_pixbuf: None,
                                            cur_ratio: 0.,
+                                           show_status: !hide_status,
                                        }));
         let ret_conn = ret.clone();
 
@@ -230,11 +232,20 @@ impl Viewer {
     fn prev(&mut self) {
         if self.index != 0 {
             self.index -= 1;
-            let _ = self.show_image();
+            if self.show_image().is_err() {
+                self.image_paths.remove(self.index);
+                if self.index != 0 {
+                    self.index -= 1;
+                    self.prev();
+                }
+            }
         }
     }
 
     fn show_image(&mut self) -> Result<()> {
+        if !self.show_status {
+            self.bottom.as_widget().hide();
+        }
         match load_image(&self.image_paths[self.index]) {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
@@ -351,10 +362,9 @@ impl Viewer {
     pub fn show_all(&mut self) {
         self.win.show_all();
         if self.image_paths.len() != 0 {
-            if let Ok(_) = self.show_image() {
-                return;
+            if self.show_image().is_err() {
+                self.next();
             }
         }
-        self.bottom.set_err("No images found");
     }
 }
