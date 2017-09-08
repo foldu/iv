@@ -160,12 +160,12 @@ impl Viewer {
                     ret_conn.borrow_mut().original_size();
                     Inhibit(true)
                 }
-                key::O => {
-                    ret_conn.borrow_mut().resize_to_fit_screen();
-                    Inhibit(true)
-                }
                 key::w => {
                     ret_conn.borrow_mut().resize_to_fit_image();
+                    Inhibit(true)
+                }
+                key::W => {
+                    ret_conn.borrow_mut().resize_to_fit_screen();
                     Inhibit(true)
                 }
                 key::minus => {
