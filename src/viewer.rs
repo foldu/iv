@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use gtk;
 use gtk::prelude::*;
 use gdk_pixbuf;
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
 use gdk::ScreenExt;
 use gdk::enums::key;
 use gio;
@@ -221,6 +221,7 @@ impl Viewer {
             self.index = tmp;
             if self.show_image().is_err() {
                 self.image_paths.remove(self.index);
+                self.index -= 1;
                 self.next();
             }
         }
@@ -237,19 +238,23 @@ impl Viewer {
         match load_image(&self.image_paths[self.index]) {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
-                self.bottom.set_filename(&filename);
 
-                match pixbuf {
+                let dims = match pixbuf {
                     ImageKind::Animated(anim) => {
                         self.img.set_from_animation(&anim);
                         self.cur_original_pixbuf = None;
                         self.bottom.set_zoom(None);
+                        (anim.get_width(), anim.get_height())
                     }
                     ImageKind::Normal(img) => {
                         self.img.set_from_pixbuf(&img);
+                        let dims = (img.get_width(), img.get_height());
                         self.cur_original_pixbuf = Some(img);
+                        dims
                     }
-                }
+                };
+
+                self.bottom.set_info(&filename, dims);
 
                 if self.image_paths.len() > 1 {
                     self.bottom.set_index(Some((self.index + 1, self.image_paths.len())));
