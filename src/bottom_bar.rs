@@ -43,8 +43,8 @@ impl BottomBar {
         self.errtext.set_text(err)
     }
 
-    pub fn set_filename(&self, text: &str) {
-        self.filename.set_text(text)
+    pub fn set_info(&self, filename: &str, dims: (i32, i32)) {
+        self.filename.set_text(&format!("{}x{}|{}", dims.0, dims.1, filename))
     }
 
     pub fn set_zoom(&self, percent: Option<Percent>) {
