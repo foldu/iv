@@ -1,17 +1,5 @@
 mod keymap;
 
-pub struct Viewer {
-    win: gtk::Window,
-    img: ScrollableImage,
-    bottom: BottomBar,
-    _layout: gtk::Box,
-    image_paths: Vec<PathBuf>,
-    index: usize,
-    cur_original_pixbuf: Option<Pixbuf>,
-    cur_ratio: Percent,
-    show_status: bool,
-}
-
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -26,6 +14,18 @@ use gio;
 use scrollable_image::ScrollableImage;
 use bottom_bar::BottomBar;
 use errors::*;
+
+pub struct Viewer {
+    win: gtk::Window,
+    img: ScrollableImage,
+    bottom: BottomBar,
+    _layout: gtk::Box,
+    image_paths: Vec<PathBuf>,
+    index: usize,
+    cur_original_pixbuf: Option<Pixbuf>,
+    cur_ratio: Percent,
+    show_status: bool,
+}
 
 type Percent = f64;
 
@@ -117,6 +117,8 @@ impl Viewer {
         // deprecated but there is no other way to set this
         // explain yourselves
         win.set_wmclass("iv", "iv");
+
+        win.set_icon_name("emblem-photos");
 
 
         let img = ScrollableImage::new();
