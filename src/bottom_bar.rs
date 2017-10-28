@@ -7,6 +7,7 @@ type Percent = f64;
 pub struct BottomBar {
     boxx: gtk::Box,
     errtext: gtk::Label,
+    resolution: gtk::Label,
     filename: gtk::Label,
     zoom: gtk::Label,
     image_index: gtk::Label,
@@ -19,8 +20,10 @@ impl BottomBar {
         filename.set_ellipsize(pango::EllipsizeMode::End);
         let zoom = gtk::Label::new(None);
         let image_index = gtk::Label::new(None);
+        let resolution = gtk::Label::new(None);
         let boxx = gtk::Box::new(gtk::Orientation::Horizontal, 5);
         boxx.pack_start(&errtext, true, false, 0);
+        boxx.pack_start(&resolution, false, false, 0);
         boxx.pack_start(&filename, false, false, 0);
         boxx.pack_start(&zoom, true, false, 0);
         boxx.pack_end(&image_index, true, false, 0);
@@ -28,6 +31,7 @@ impl BottomBar {
         boxx.set_halign(gtk::Align::End);
         BottomBar {
             boxx: boxx,
+            resolution: resolution,
             errtext: errtext,
             filename: filename,
             zoom: zoom,
@@ -44,7 +48,8 @@ impl BottomBar {
     }
 
     pub fn set_info(&self, filename: &str, dims: (i32, i32)) {
-        self.filename.set_text(&format!("{}x{}|{}", dims.0, dims.1, filename))
+        self.filename.set_text(&format!("| {}", filename));
+        self.resolution.set_text(&format!("{}x{}", dims.0, dims.1));
     }
 
     pub fn set_zoom(&self, percent: Option<Percent>) {
