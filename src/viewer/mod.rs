@@ -7,7 +7,7 @@ use std::rc::Rc;
 use failure;
 use gdk::ScreenExt;
 use gdk_pixbuf;
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
+use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
 use gio;
 use gtk;
 use gtk::prelude::*;
