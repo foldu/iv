@@ -6,7 +6,6 @@ type Percent = f64;
 
 pub struct BottomBar {
     boxx: gtk::Box,
-    errtext: gtk::Label,
     resolution: gtk::Label,
     filename: gtk::Label,
     zoom: gtk::Label,
@@ -15,14 +14,12 @@ pub struct BottomBar {
 
 impl BottomBar {
     pub fn new() -> BottomBar {
-        let errtext = gtk::Label::new(None);
         let filename = gtk::Label::new(None);
         filename.set_ellipsize(pango::EllipsizeMode::End);
         let zoom = gtk::Label::new(None);
         let image_index = gtk::Label::new(None);
         let resolution = gtk::Label::new(None);
         let boxx = gtk::Box::new(gtk::Orientation::Horizontal, 5);
-        boxx.pack_start(&errtext, true, false, 0);
         boxx.pack_start(&resolution, false, false, 0);
         boxx.pack_start(&filename, false, false, 0);
         boxx.pack_start(&zoom, true, false, 0);
@@ -32,7 +29,6 @@ impl BottomBar {
         BottomBar {
             boxx: boxx,
             resolution: resolution,
-            errtext: errtext,
             filename: filename,
             zoom: zoom,
             image_index: image_index,
@@ -41,10 +37,6 @@ impl BottomBar {
 
     pub fn as_widget(&self) -> &gtk::Box {
         &self.boxx
-    }
-
-    pub fn set_err(&self, err: &str) {
-        self.errtext.set_text(err)
     }
 
     pub fn set_info(&self, filename: &str, dims: (i32, i32)) {
