@@ -167,6 +167,8 @@ impl Viewer {
                 self.index -= 1;
                 self.next();
             }
+        } else {
+            self.show_image().expect("Wrong");
         }
     }
 
@@ -180,6 +182,8 @@ impl Viewer {
                     self.prev();
                 }
             }
+        } else {
+            self.show_image().expect("This shouldn't happen");
         }
     }
 
@@ -205,7 +209,7 @@ impl Viewer {
 
                 self.bottom.set_info(&filename, dims);
 
-                if self.image_paths.len() > 1 {
+                if self.image_paths.len() >= 1 {
                     self.bottom
                         .set_index(Some((self.index + 1, self.image_paths.len())));
                 } else {
@@ -300,13 +304,11 @@ impl Viewer {
 
     pub fn show_all(&mut self) {
         self.win.show_all();
-        if self.show_status {
-            self.toggle_status()
-        }
-        if self.image_paths.len() != 0 {
-            if self.show_image().is_err() {
-                self.next();
-                self.image_paths.remove(0); // FIXME: displayed index wrong
+        while self.image_paths.len() > 0 {
+            if let Err(_) = self.show_image() {
+                self.image_paths.remove(0);
+            } else {
+                break;
             }
         }
     }
