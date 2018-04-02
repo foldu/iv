@@ -1,19 +1,19 @@
 mod keymap;
 
+use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::cell::RefCell;
 
-use gtk;
-use gtk::prelude::*;
+use failure;
+use gdk::ScreenExt;
 use gdk_pixbuf;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt};
-use gdk::ScreenExt;
 use gio;
+use gtk;
+use gtk::prelude::*;
 
-use scrollable_image::ScrollableImage;
 use bottom_bar::BottomBar;
-use errors::*;
+use scrollable_image::ScrollableImage;
 
 pub struct Viewer {
     win: gtk::Window,
@@ -34,12 +34,12 @@ enum ImageKind {
     Normal(Pixbuf),
 }
 
-fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind)> {
-    let path_str = if let Some(path) = path.as_ref().to_str() {
+fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind), failure::Error> {
+    let path = path.as_ref();
+    let path_str = if let Some(path) = path.to_str() {
         path
     } else {
-        bail!(format!("Can't decode \"{:?}\" as UTF-8",
-                      path.as_ref().to_string_lossy()));
+        return Err(format_err!("Can't decode path {:?} as UTF-8", path));
     };
 
     let (mime_guess, _) = gio::content_type_guess(path_str, &[]);
@@ -50,12 +50,9 @@ fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind)> {
         ImageKind::Normal(Pixbuf::new_from_file(&path_str)?)
     };
 
-    let filename = path.as_ref()
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .to_owned();
+    let filename = path.file_name()
+        .ok_or_else(|| format_err!("Missing filename in path {:?}", path))
+        .map(|filename| filename.to_str().unwrap().to_owned())?;
 
     Ok((filename, ret))
 }
@@ -63,12 +60,17 @@ fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind)> {
 type V2 = (i32, i32);
 
 fn aspect_ratio_zoom(orig: V2, ratio: Percent) -> V2 {
-    ((orig.0 as f64 * ratio).floor() as i32, (orig.1 as f64 * ratio).floor() as i32)
+    (
+        (orig.0 as f64 * ratio).floor() as i32,
+        (orig.1 as f64 * ratio).floor() as i32,
+    )
 }
 
 fn scale_with_aspect_ratio(orig: V2, scale_to: V2) -> (Percent, V2) {
-    let ratio = f64::min(scale_to.0 as f64 / orig.0 as f64,
-                         scale_to.1 as f64 / orig.1 as f64);
+    let ratio = f64::min(
+        scale_to.0 as f64 / orig.0 as f64,
+        scale_to.1 as f64 / orig.1 as f64,
+    );
     let scaled = aspect_ratio_zoom(orig, ratio);
     (ratio, scaled)
 }
@@ -111,15 +113,14 @@ impl Viewer {
         win.set_position(gtk::WindowPosition::CenterAlways);
 
         win.connect_delete_event(|_, _| {
-                                     gtk::main_quit();
-                                     Inhibit(false)
-                                 });
+            gtk::main_quit();
+            Inhibit(false)
+        });
         // deprecated but there is no other way to set this
         // explain yourselves
         win.set_wmclass("iv", "iv");
 
         win.set_icon_name("emblem-photos");
-
 
         let img = ScrollableImage::new();
         let bottom = BottomBar::new();
@@ -127,19 +128,18 @@ impl Viewer {
         layout.pack_start(img.as_widget(), true, true, 0);
         layout.pack_end(bottom.as_widget(), false, false, 0);
 
-
         win.add(&layout);
         let ret = Rc::new(RefCell::new(Viewer {
-                                           win: win,
-                                           img: img,
-                                           bottom: bottom,
-                                           _layout: layout,
-                                           image_paths: image_paths,
-                                           index: 0,
-                                           cur_original_pixbuf: None,
-                                           cur_ratio: 0.,
-                                           show_status: !show_status,
-                                       }));
+            win: win,
+            img: img,
+            bottom: bottom,
+            _layout: layout,
+            image_paths: image_paths,
+            index: 0,
+            cur_original_pixbuf: None,
+            cur_ratio: 0.,
+            show_status: !show_status,
+        }));
         // let ret_conn = ret.clone();
 
         Viewer::setup_keys(&ret);
@@ -183,7 +183,7 @@ impl Viewer {
         }
     }
 
-    fn show_image(&mut self) -> Result<()> {
+    fn show_image(&mut self) -> Result<(), failure::Error> {
         match load_image(&self.image_paths[self.index]) {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
@@ -206,7 +206,8 @@ impl Viewer {
                 self.bottom.set_info(&filename, dims);
 
                 if self.image_paths.len() > 1 {
-                    self.bottom.set_index(Some((self.index + 1, self.image_paths.len())));
+                    self.bottom
+                        .set_index(Some((self.index + 1, self.image_paths.len())));
                 } else {
                     self.bottom.set_index(None);
                 }
@@ -216,7 +217,7 @@ impl Viewer {
             Err(e) => {
                 self.cur_original_pixbuf = None;
                 self.bottom.set_index(None);
-                eprintln!("E: Can't load image: {}", e);
+                eprintln!("{}", e);
                 Err(e)
             }
         }
@@ -229,11 +230,13 @@ impl Viewer {
         let alloc = self.img.get_allocation();
         let mut ratio = self.cur_ratio;
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
-            let (new_ratio, scaled) = scale_with_aspect_ratio((pixbuf.get_width(),
-                                                               pixbuf.get_height()),
-                                                              (alloc.width, alloc.height));
+            let (new_ratio, scaled) = scale_with_aspect_ratio(
+                (pixbuf.get_width(), pixbuf.get_height()),
+                (alloc.width, alloc.height),
+            );
             ratio = new_ratio;
-            let new_buf = pixbuf.scale_simple(scaled.0, scaled.1, gdk_pixbuf::InterpType::Bilinear)
+            let new_buf = pixbuf
+                .scale_simple(scaled.0, scaled.1, gdk_pixbuf::InterpType::Bilinear)
                 .unwrap();
             self.img.set_from_pixbuf(&new_buf);
         }
@@ -262,7 +265,8 @@ impl Viewer {
         let ratio = next_zoom_stage(self.cur_ratio, zoomtype);
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
             let scaled = aspect_ratio_zoom((pixbuf.get_width(), pixbuf.get_height()), ratio);
-            let new_buf = pixbuf.scale_simple(scaled.0, scaled.1, gdk_pixbuf::InterpType::Bilinear)
+            let new_buf = pixbuf
+                .scale_simple(scaled.0, scaled.1, gdk_pixbuf::InterpType::Bilinear)
                 .unwrap();
             self.img.set_from_pixbuf(&new_buf);
         }
@@ -283,10 +287,7 @@ impl Viewer {
         }
         self.original_size();
         if let Some(ref pix) = self.cur_original_pixbuf {
-            let bot_alloc = self.bottom
-                .as_widget()
-                .get_allocation()
-                .height;
+            let bot_alloc = self.bottom.as_widget().get_allocation().height;
             let (img_x, img_y) = (pix.get_width(), pix.get_height());
             self.win.resize(img_x, img_y + bot_alloc);
         }
