@@ -148,11 +148,8 @@ impl Viewer {
             cur_ratio: 0.,
             show_status: !show_status,
         }));
-        // let ret_conn = ret.clone();
 
         Viewer::setup_keys(&ret);
-        // ret.borrow_mut().win.connect_key_press_event(move |_, key_event| {
-        // });
 
         ret
     }
@@ -336,6 +333,7 @@ impl Viewer {
 
     pub fn show_all(&mut self) {
         self.win.show_all();
+        self.toggle_status();
         self.jump_to_start();
     }
 }
