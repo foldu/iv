@@ -9,6 +9,8 @@ extern crate rayon;
 extern crate walkdir;
 #[macro_use]
 extern crate structopt;
+extern crate magic;
+extern crate mime;
 
 use std::path::PathBuf;
 use std::process::exit;
@@ -19,6 +21,7 @@ use walkdir::WalkDir;
 
 mod bottom_bar;
 mod scrollable_image;
+mod util;
 mod viewer;
 
 use viewer::Viewer;

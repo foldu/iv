@@ -8,12 +8,13 @@ use failure;
 use gdk::ScreenExt;
 use gdk_pixbuf;
 use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
-use gio;
 use gtk;
 use gtk::prelude::*;
+use mime;
 
 use bottom_bar::BottomBar;
 use scrollable_image::ScrollableImage;
+use util;
 
 pub struct Viewer {
     win: gtk::Window,
@@ -42,12 +43,19 @@ fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind), failure::E
         return Err(format_err!("Can't decode path {:?} as UTF-8", path));
     };
 
-    let (mime_guess, _) = gio::content_type_guess(path_str, &[]);
+    let mime = util::mime_type_file(&path_str)
+        .map_err(|e| format_err!("Can't get mime type of file {:?}: {}", path, e))?;
 
-    let ret = if mime_guess == "image/gif" {
+    let ret = if mime == mime::IMAGE_GIF {
         ImageKind::Animated(PixbufAnimation::new_from_file(&path_str)?)
-    } else {
+    } else if mime.type_() == mime::IMAGE {
         ImageKind::Normal(Pixbuf::new_from_file(&path_str)?)
+    } else {
+        return Err(format_err!(
+            "Can't open file {:?}: Can't open files with mime type {}",
+            path,
+            mime
+        ));
     };
 
     let filename = path.file_name()
