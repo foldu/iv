@@ -1,18 +1,20 @@
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
+use gdk::enums::key;
 use gtk;
 use gtk::prelude::*;
-use gdk::enums::key;
 
-use viewer::Viewer;
 use scrollable_image::ScrollT;
+use viewer::Viewer;
 
 impl Viewer {
     pub(in viewer) fn setup_keys(viewer: &Rc<RefCell<Viewer>>) {
         let clone = viewer.clone();
-        viewer.borrow_mut().win.connect_key_press_event(move |_, key_event| {
-            match key_event.get_keyval() {
+        viewer
+            .borrow_mut()
+            .win
+            .connect_key_press_event(move |_, key_event| match key_event.get_keyval() {
                 key::q => {
                     gtk::main_quit();
                     Inhibit(false)
@@ -85,8 +87,15 @@ impl Viewer {
                     clone.borrow_mut().toggle_status();
                     Inhibit(true)
                 }
+                key::b => {
+                    clone.borrow_mut().jump_to_start();
+                    Inhibit(true)
+                }
+                key::e => {
+                    clone.borrow_mut().jump_to_end();
+                    Inhibit(true)
+                }
                 _ => Inhibit(false),
-            }
-        });
+            });
     }
 }

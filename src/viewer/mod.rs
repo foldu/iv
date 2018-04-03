@@ -310,8 +310,8 @@ impl Viewer {
         self.win.resize(optimal.0, optimal.1);
     }
 
-    pub fn show_all(&mut self) {
-        self.win.show_all();
+    fn jump_to_start(&mut self) {
+        self.index = 0;
         while self.image_paths.len() > 0 {
             if let Err(_) = self.show_image() {
                 self.image_paths.remove(0);
@@ -319,5 +319,23 @@ impl Viewer {
                 break;
             }
         }
+    }
+
+    fn jump_to_end(&mut self) {
+        self.index = self.image_paths.len() - 1;
+        while self.image_paths.len() > 0 {
+            if let Err(_) = self.show_image() {
+                let len = self.image_paths.len() - 1;
+                self.image_paths.remove(len);
+                self.index -= 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    pub fn show_all(&mut self) {
+        self.win.show_all();
+        self.jump_to_start();
     }
 }
