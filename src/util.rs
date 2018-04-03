@@ -8,6 +8,7 @@ thread_local! {
     static COOKIE: Cookie = {
         let mut cflags = CookieFlags::default();
         cflags.insert(flags::MIME_TYPE);
+        cflags.insert(flags::SYMLINK);
         cflags.insert(flags::ERROR);
         cflags.insert(flags::NO_CHECK_COMPRESS);
         cflags.insert(flags::NO_CHECK_CDF);
