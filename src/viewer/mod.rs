@@ -214,7 +214,7 @@ impl Viewer {
 
                 self.bottom.set_info(&filename, dims);
 
-                if self.image_paths.len() >= 1 {
+                if self.image_paths.len() > 1 {
                     self.bottom
                         .set_index(Some((self.index + 1, self.image_paths.len())));
                 } else {
