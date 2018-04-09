@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
-use gdk::ModifierType;
-
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
-pub struct KeyPress(pub u32, pub ModifierType);
+pub struct KeyPress(pub u32);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "snake_case")]

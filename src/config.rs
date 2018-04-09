@@ -5,6 +5,7 @@ use std::io;
 
 use directories::BaseDirs;
 use failure;
+use gdk::ModifierType;
 use gtk;
 use serde::de::{self, Deserializer, Visitor};
 use serde::ser::Serializer;
@@ -29,7 +30,7 @@ impl Serialize for KeyPress {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&gtk::accelerator_name(self.0, self.1)
+        serializer.serialize_str(&gtk::accelerator_name(self.0, ModifierType::empty())
             .expect("Tried to serialize invalid key combination"))
     }
 }
@@ -44,11 +45,11 @@ impl<'de> Visitor<'de> for KeyPressVisitor {
     }
 
     fn visit_str<E: de::Error>(self, value: &str) -> Result<KeyPress, E> {
-        let (keycode, mask) = gtk::accelerator_parse(&value);
+        let (keycode, _mask) = gtk::accelerator_parse(&value);
         if keycode == 0 {
             Err(E::custom(format!("Can't parse as key: {}", value)))
         } else {
-            Ok(KeyPress(keycode, mask))
+            Ok(KeyPress(keycode))
         }
     }
 }
@@ -58,11 +59,11 @@ macro_rules! keymap {
         {
             let mut tmp = HashMap::new();
             $(
-                let (keycode, mkey) = gtk::accelerator_parse($key);
+                let (keycode, _mkey) = gtk::accelerator_parse($key);
                 //if keycode == 0 {
                 //    panic!("{}", $key);
                 //}
-                tmp.insert(KeyPress(keycode, mkey), KeyAction::$action);
+                tmp.insert(KeyPress(keycode), KeyAction::$action);
              )*
                 tmp
         }
@@ -82,10 +83,10 @@ impl Default for Config {
                 "W" => ResizeToFitScreen,
                 "minus" => ZoomOut,
                 "plus" => ZoomIn,
-                "j" => ScrollUp,
-                "k" => ScrollDown,
-                "h" => ScrollRight,
-                "l" => ScrollLeft,
+                "k" => ScrollUp,
+                "j" => ScrollDown,
+                "l" => ScrollRight,
+                "h" => ScrollLeft,
                 "g" => ScrollVStart,
                 "G" => ScrollVEnd,
                 "0" => ScrollHStart,

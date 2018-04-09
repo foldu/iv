@@ -15,9 +15,7 @@ impl Viewer {
             .win
             .connect_key_press_event(move |_, key_event| {
                 let scroll = |s| clone.borrow().img.scroll(s);
-                if let Some(action) =
-                    keymap.get(&KeyPress(key_event.get_keyval(), key_event.get_state()))
-                {
+                if let Some(action) = keymap.get(&KeyPress(key_event.get_keyval())) {
                     use self::KeyAction::*;
                     match *action {
                         Quit => gtk::main_quit(),
