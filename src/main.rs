@@ -70,7 +70,7 @@ fn run() -> Result<(), failure::Error> {
         }
     };
 
-    let config = config::Config::load()?;
+    let config = config::load()?;
 
     let app = Viewer::new(images, !hide_status, config.keymap);
     app.borrow_mut().show_all();
