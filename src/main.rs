@@ -11,6 +11,11 @@ extern crate walkdir;
 extern crate structopt;
 extern crate magic;
 extern crate mime;
+extern crate toml;
+#[macro_use]
+extern crate serde_derive;
+extern crate directories;
+extern crate serde;
 
 use std::path::PathBuf;
 use std::process::exit;
@@ -20,6 +25,8 @@ use structopt::StructOpt;
 use walkdir::WalkDir;
 
 mod bottom_bar;
+mod config;
+mod keys;
 mod scrollable_image;
 mod util;
 mod viewer;
@@ -63,7 +70,9 @@ fn run() -> Result<(), failure::Error> {
         }
     };
 
-    let app = Viewer::new(images, !hide_status);
+    let config = config::Config::load()?;
+
+    let app = Viewer::new(images, !hide_status, config.keymap);
     app.borrow_mut().show_all();
 
     gtk::main();

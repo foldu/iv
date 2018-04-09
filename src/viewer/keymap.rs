@@ -1,101 +1,50 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gdk::enums::key;
 use gtk;
 use gtk::prelude::*;
 
+use keys::{KeyAction, KeyMap, KeyPress};
 use scrollable_image::ScrollT;
 use viewer::Viewer;
-
 impl Viewer {
-    pub(in viewer) fn setup_keys(viewer: &Rc<RefCell<Viewer>>) {
+    pub(in viewer) fn setup_keys(keymap: KeyMap, viewer: &Rc<RefCell<Viewer>>) {
         let clone = viewer.clone();
         viewer
             .borrow_mut()
             .win
-            .connect_key_press_event(move |_, key_event| match key_event.get_keyval() {
-                key::q => {
-                    gtk::main_quit();
+            .connect_key_press_event(move |_, key_event| {
+                let scroll = |s| clone.borrow().img.scroll(s);
+                if let Some(action) =
+                    keymap.get(&KeyPress(key_event.get_keyval(), key_event.get_state()))
+                {
+                    use self::KeyAction::*;
+                    match *action {
+                        Quit => gtk::main_quit(),
+                        Next => clone.borrow_mut().next(),
+                        Previous => clone.borrow_mut().prev(),
+                        ScaleToFitCurrent => clone.borrow_mut().scale_to_fit_current(),
+                        OriginalSize => clone.borrow_mut().original_size(),
+                        ResizeToFitImage => clone.borrow_mut().resize_to_fit_image(),
+                        ResizeToFitScreen => clone.borrow_mut().resize_to_fit_screen(),
+                        ZoomOut => clone.borrow_mut().zoom_out(),
+                        ZoomIn => clone.borrow_mut().zoom_in(),
+                        ScrollDown => scroll(ScrollT::Down),
+                        ScrollUp => scroll(ScrollT::Up),
+                        ScrollLeft => scroll(ScrollT::Left),
+                        ScrollRight => scroll(ScrollT::Right),
+                        ScrollVStart => scroll(ScrollT::StartV),
+                        ScrollVEnd => scroll(ScrollT::EndV),
+                        ScrollHStart => scroll(ScrollT::StartH),
+                        ScrollHEnd => scroll(ScrollT::EndH),
+                        ToggleStatus => clone.borrow_mut().toggle_status(),
+                        JumpToStart => clone.borrow_mut().jump_to_start(),
+                        JumpToEnd => clone.borrow_mut().jump_to_end(),
+                    };
+                    Inhibit(true)
+                } else {
                     Inhibit(false)
                 }
-                key::n => {
-                    clone.borrow_mut().next();
-                    Inhibit(true)
-                }
-                key::p => {
-                    clone.borrow_mut().prev();
-                    Inhibit(true)
-                }
-                key::equal => {
-                    clone.borrow_mut().scale_to_fit_current();
-                    Inhibit(true)
-                }
-                key::o => {
-                    clone.borrow_mut().original_size();
-                    Inhibit(true)
-                }
-                key::w => {
-                    clone.borrow_mut().resize_to_fit_image();
-                    Inhibit(true)
-                }
-                key::W => {
-                    clone.borrow_mut().resize_to_fit_screen();
-                    Inhibit(true)
-                }
-                key::minus => {
-                    clone.borrow_mut().zoom_out();
-                    Inhibit(true)
-                }
-                key::plus => {
-                    clone.borrow_mut().zoom_in();
-                    Inhibit(true)
-                }
-                key::j => {
-                    clone.borrow().img.scroll(ScrollT::Down);
-                    Inhibit(true)
-                }
-                key::k => {
-                    clone.borrow().img.scroll(ScrollT::Up);
-                    Inhibit(true)
-                }
-                key::h => {
-                    clone.borrow().img.scroll(ScrollT::Left);
-                    Inhibit(true)
-                }
-                key::l => {
-                    clone.borrow().img.scroll(ScrollT::Right);
-                    Inhibit(true)
-                }
-                key::g => {
-                    clone.borrow().img.scroll(ScrollT::StartV);
-                    Inhibit(true)
-                }
-                key::G => {
-                    clone.borrow().img.scroll(ScrollT::EndV);
-                    Inhibit(true)
-                }
-                key::_0 => {
-                    clone.borrow().img.scroll(ScrollT::StartH);
-                    Inhibit(true)
-                }
-                key::dollar => {
-                    clone.borrow().img.scroll(ScrollT::EndH);
-                    Inhibit(true)
-                }
-                key::m => {
-                    clone.borrow_mut().toggle_status();
-                    Inhibit(true)
-                }
-                key::b => {
-                    clone.borrow_mut().jump_to_start();
-                    Inhibit(true)
-                }
-                key::e => {
-                    clone.borrow_mut().jump_to_end();
-                    Inhibit(true)
-                }
-                _ => Inhibit(false),
             });
     }
 }

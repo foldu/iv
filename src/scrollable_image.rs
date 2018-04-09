@@ -1,6 +1,6 @@
+use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 use gtk;
 use gtk::prelude::*;
-use gdk_pixbuf::{Pixbuf, PixbufAnimation};
 
 pub struct ScrollableImage {
     scroll_view: gtk::ScrolledWindow,
@@ -12,8 +12,12 @@ impl ScrollableImage {
         let scroll_view = gtk::ScrolledWindow::new(None, None);
         let image = gtk::Image::new();
         scroll_view.add(&image);
-        scroll_view.get_hscrollbar().map(|scroll| scroll.set_visible(false));
-        scroll_view.get_vscrollbar().map(|scroll| scroll.set_visible(false));
+        scroll_view
+            .get_hscrollbar()
+            .map(|scroll| scroll.set_visible(false));
+        scroll_view
+            .get_vscrollbar()
+            .map(|scroll| scroll.set_visible(false));
         ScrollableImage {
             scroll_view: scroll_view,
             image: image,

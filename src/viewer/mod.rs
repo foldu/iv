@@ -13,6 +13,7 @@ use gtk::prelude::*;
 use mime;
 
 use bottom_bar::BottomBar;
+use keys::KeyMap;
 use scrollable_image::ScrollableImage;
 use util;
 
@@ -112,7 +113,11 @@ fn next_zoom_stage(mut percent: Percent, zoom_opt: Zoom) -> Percent {
 }
 
 impl Viewer {
-    pub fn new(image_paths: Vec<PathBuf>, show_status: bool) -> Rc<RefCell<Viewer>> {
+    pub fn new(
+        image_paths: Vec<PathBuf>,
+        show_status: bool,
+        keymap: KeyMap,
+    ) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
         win.set_title("iv");
 
@@ -149,7 +154,7 @@ impl Viewer {
             show_status: !show_status,
         }));
 
-        Viewer::setup_keys(&ret);
+        Viewer::setup_keys(keymap, &ret);
 
         ret
     }
