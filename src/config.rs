@@ -17,6 +17,7 @@ use keys::{KeyAction, KeyMap, KeyPress};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub keymap: KeyMap,
+    pub scrollbars: bool,
 }
 
 impl<'de> Deserialize<'de> for KeyPress {
@@ -73,6 +74,7 @@ macro_rules! keymap {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            scrollbars: false,
             keymap: keymap! {
                 "q" => Quit,
                 "n" => Next,
@@ -106,8 +108,8 @@ pub fn load() -> Result<Config, failure::Error> {
         Err(e) => {
             if e.kind() == io::ErrorKind::NotFound {
                 let ret = Config::default();
-                eprintln!("Default config written to {:?}", path);
                 fs::write(&path, toml::to_string_pretty(&ret).unwrap())?;
+                eprintln!("Default config written to {:?}", path);
                 Ok(ret)
             } else {
                 Err(format_err!("Can't read config: {}", e))
