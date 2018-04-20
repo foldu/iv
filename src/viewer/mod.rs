@@ -11,6 +11,7 @@ use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
 use gtk;
 use gtk::prelude::*;
 use mime;
+use tempfile::TempDir;
 
 use bottom_bar::BottomBar;
 use keys::KeyMap;
@@ -27,6 +28,7 @@ pub struct Viewer {
     cur_original_pixbuf: Option<Pixbuf>,
     cur_ratio: Percent,
     show_status: bool,
+    tempdirs: Vec<TempDir>,
 }
 
 type Percent = f64;
@@ -152,6 +154,7 @@ impl Viewer {
             cur_original_pixbuf: None,
             cur_ratio: 0.,
             show_status: !show_status,
+            tempdirs: Vec::new(),
         }));
 
         Viewer::setup_keys(keymap, &ret);

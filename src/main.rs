@@ -16,8 +16,10 @@ extern crate toml;
 extern crate serde_derive;
 extern crate directories;
 extern crate serde;
+extern crate tempfile;
+extern crate zip;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::exit;
 
 use rayon::prelude::*;
@@ -26,6 +28,7 @@ use walkdir::WalkDir;
 
 mod bottom_bar;
 mod config;
+mod extract;
 mod keys;
 mod scrollable_image;
 mod util;
@@ -45,6 +48,9 @@ fn run() -> Result<(), failure::Error> {
         } => {
             if recursive {
                 let mut ret = Vec::new();
+                if paths.is_empty() {
+                    ret.push(PathBuf::from("."));
+                }
                 for path in paths {
                     if path.is_file() {
                         ret.push(path);
@@ -65,6 +71,16 @@ fn run() -> Result<(), failure::Error> {
                 ret.par_sort_unstable();
                 (ret, hide_status)
             } else {
+                let paths = if paths.is_empty() {
+                    Path::new(".")
+                        .read_dir()
+                        .expect("Can't read current directory")
+                        .filter_map(|node| node.ok())
+                        .map(|node| node.path())
+                        .collect()
+                } else {
+                    paths
+                };
                 (paths, hide_status)
             }
         }
