@@ -118,6 +118,7 @@ impl Viewer {
     pub fn new(
         image_paths: Vec<PathBuf>,
         show_status: bool,
+        with_scrollbars: bool,
         keymap: KeyMap,
     ) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -137,7 +138,7 @@ impl Viewer {
 
         win.set_icon_name("emblem-photos");
 
-        let img = ScrollableImage::new();
+        let img = ScrollableImage::new(with_scrollbars);
         let bottom = BottomBar::new();
         let layout = gtk::Box::new(gtk::Orientation::Vertical, 0);
         layout.pack_start(img.as_widget(), true, true, 0);

@@ -88,7 +88,7 @@ fn run() -> Result<(), failure::Error> {
 
     let config = config::load()?;
 
-    let app = Viewer::new(images, !hide_status, config.keymap);
+    let app = Viewer::new(images, !hide_status, config.scrollbars, config.keymap);
     app.borrow_mut().show_all();
 
     gtk::main();

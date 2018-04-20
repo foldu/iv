@@ -8,16 +8,18 @@ pub struct ScrollableImage {
 }
 
 impl ScrollableImage {
-    pub fn new() -> ScrollableImage {
+    pub fn new(with_scrollbars: bool) -> ScrollableImage {
         let scroll_view = gtk::ScrolledWindow::new(None, None);
         let image = gtk::Image::new();
         scroll_view.add(&image);
-        scroll_view
-            .get_hscrollbar()
-            .map(|scroll| scroll.set_visible(false));
-        scroll_view
-            .get_vscrollbar()
-            .map(|scroll| scroll.set_visible(false));
+        if !with_scrollbars {
+            scroll_view
+                .get_hscrollbar()
+                .map(|scroll| scroll.set_visible(false));
+            scroll_view
+                .get_vscrollbar()
+                .map(|scroll| scroll.set_visible(false));
+        }
         ScrollableImage {
             scroll_view: scroll_view,
             image: image,
