@@ -29,6 +29,7 @@ use walkdir::WalkDir;
 mod bottom_bar;
 mod config;
 mod extract;
+mod find;
 mod keys;
 mod scrollable_image;
 mod util;
@@ -47,24 +48,11 @@ fn run() -> Result<(), failure::Error> {
             recursive,
         } => {
             if recursive {
-                let mut ret = Vec::new();
-                if paths.is_empty() {
-                    ret.push(PathBuf::from("."));
-                }
-                for path in paths {
-                    if path.is_file() {
-                        ret.push(path);
-                    } else {
-                        for entry in WalkDir::new(path) {
-                            match entry {
-                                Ok(ref entry) if entry.file_type().is_file() => {
-                                    ret.push(PathBuf::from(entry.path()))
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
+                let mut ret = if paths.is_empty() {
+                    vec![PathBuf::from(".")]
+                } else {
+                    paths.into_iter().flat_map(find::find_files_rec).collect()
+                };
 
                 // recursive dirwalking can produce a huge amount of results so why not sort it
                 // in parallel
