@@ -19,12 +19,11 @@ extern crate serde;
 extern crate tempfile;
 extern crate zip;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::exit;
 
 use rayon::prelude::*;
 use structopt::StructOpt;
-use walkdir::WalkDir;
 
 mod bottom_bar;
 mod config;
@@ -48,8 +47,8 @@ fn run() -> Result<(), failure::Error> {
             recursive,
         } => {
             if recursive {
-                let mut ret = if paths.is_empty() {
-                    vec![PathBuf::from(".")]
+                let mut ret: Vec<PathBuf> = if paths.is_empty() {
+                    find::find_files_rec(".").collect()
                 } else {
                     paths.into_iter().flat_map(find::find_files_rec).collect()
                 };
@@ -60,11 +59,8 @@ fn run() -> Result<(), failure::Error> {
                 (ret, hide_status)
             } else {
                 let paths = if paths.is_empty() {
-                    Path::new(".")
-                        .read_dir()
-                        .expect("Can't read current directory")
-                        .filter_map(|node| node.ok())
-                        .map(|node| node.path())
+                    find::find_files(".")
+                        .map_err(|e| format_err!("Can't open current directory: {}", e))?
                         .collect()
                 } else {
                     paths
@@ -87,7 +83,7 @@ fn run() -> Result<(), failure::Error> {
 #[structopt(name = "iv")]
 /// It views images
 ///
-/// Keybinds:
+/// Default keybinds:
 ///
 /// q - Quit
 ///
