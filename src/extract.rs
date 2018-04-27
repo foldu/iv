@@ -7,30 +7,37 @@ use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 use zip::{self, ZipArchive};
 
+#[derive(Debug, Fail)]
 pub enum ZipError {
+    #[fail(display = "{}", _0)]
     Io(io::Error),
-    NullInFilename(Vec<u8>),
-    PotentiallyMaliciousFilename(Vec<u8>),
+    #[fail(display = "Null in filename {:?}", _0)]
+    NullInFilename(PathBuf),
+    #[fail(display = "Path trickery in filename {:?}", _0)]
+    PotentiallyMaliciousFilename(PathBuf),
+    #[fail(display = "{}", _0)]
     Zip(zip::result::ZipError),
 }
 
 fn extract_path<P: AsRef<Path>>(root: P, path: &[u8]) -> Result<PathBuf, ZipError> {
     let root = root.as_ref();
+    let os_path = OsStr::from_bytes(path);
     if path.contains(&b'\0') {
-        return Err(ZipError::NullInFilename(Vec::from(path)));
+        return Err(ZipError::NullInFilename(PathBuf::from(os_path)));
     }
 
     use std::path::Component;
-    let pathpath = Path::new(OsStr::from_bytes(path));
-    let any_weird_components = pathpath.components().any(|comp| match comp {
+    let any_weird_components = Path::new(os_path).components().any(|comp| match comp {
         Component::Normal(..) => false,
         _ => true,
     });
 
     if any_weird_components {
-        Err(ZipError::PotentiallyMaliciousFilename(Vec::from(path)))
+        Err(ZipError::PotentiallyMaliciousFilename(PathBuf::from(
+            os_path,
+        )))
     } else {
-        Ok(root.join(pathpath))
+        Ok(root.join(os_path))
     }
 }
 
