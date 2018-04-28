@@ -18,6 +18,8 @@ extern crate directories;
 extern crate serde;
 extern crate tempfile;
 extern crate zip;
+#[macro_use]
+extern crate lazy_static;
 
 use std::path::PathBuf;
 use std::process::exit;

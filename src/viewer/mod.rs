@@ -1,4 +1,4 @@
-mod keymap;
+mod setup;
 
 use std::cell::RefCell;
 use std::path::{Path, PathBuf};
@@ -14,6 +14,8 @@ use mime;
 use tempfile::TempDir;
 
 use bottom_bar::BottomBar;
+use extract::tmp_extract_zip;
+use find;
 use keys::KeyMap;
 use scrollable_image::ScrollableImage;
 use util;
@@ -68,6 +70,23 @@ fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind), failure::E
     Ok((filename, ret))
 }
 
+fn guess_file_type<P: AsRef<Path>>(path: P) -> Result<FileType, failure::Error> {
+    let path = path.as_ref();
+    let mime = util::mime_type_file(path)
+        .map_err(|e| format_err!("Can't get mime type of {:?}: {}", path, e))?;
+    if mime == mime::IMAGE_GIF {
+        Ok(FileType::AnimatedImage)
+    } else if mime.type_() == mime::IMAGE {
+        Ok(FileType::Image)
+    } else if mime.type_() == mime::VIDEO {
+        Ok(FileType::Video)
+    } else if mime == *util::APPLICATION_ZIP {
+        Ok(FileType::Zip)
+    } else {
+        Err(format_err!("Unsupported mime type: {}", mime))
+    }
+}
+
 type V2 = (i32, i32);
 
 fn aspect_ratio_zoom(orig: V2, ratio: Percent) -> V2 {
@@ -96,6 +115,13 @@ fn optimal_16_10_win_size(win: &gtk::Window) -> V2 {
 enum Zoom {
     In,
     Out,
+}
+
+enum FileType {
+    Video,
+    AnimatedImage,
+    Image,
+    Zip,
 }
 
 fn next_zoom_stage(mut percent: Percent, zoom_opt: Zoom) -> Percent {
@@ -128,10 +154,6 @@ impl Viewer {
         win.set_default_size(optimal.0, optimal.1);
         win.set_position(gtk::WindowPosition::CenterAlways);
 
-        win.connect_delete_event(|_, _| {
-            gtk::main_quit();
-            Inhibit(false)
-        });
         // deprecated but there is no other way to set this
         // explain yourselves
         win.set_wmclass("iv", "iv");
@@ -158,9 +180,17 @@ impl Viewer {
             tempdirs: Vec::new(),
         }));
 
-        Viewer::setup_keys(keymap, &ret);
+        Viewer::setup(keymap, &ret);
 
         ret
+    }
+
+    fn quit(&mut self) {
+        for dir in self.tempdirs.drain(0..) {
+            dir.close().expect("Can't close tempdir");
+        }
+
+        gtk::main_quit();
     }
 
     fn toggle_status(&mut self) {
@@ -172,24 +202,57 @@ impl Viewer {
         }
     }
 
+    fn show_current(&mut self) -> Result<(), failure::Error> {
+        let mut inner = || {
+            let file_type = guess_file_type(&self.image_paths[self.index])?;
+            match file_type {
+                FileType::Zip => {
+                    let extracted = tmp_extract_zip(&self.image_paths[self.index])?;
+                    let path = extracted.path().to_owned();
+                    self.tempdirs.push(extracted);
+
+                    let new = find::find_files_rec(path);
+                    let mut rest = self.image_paths.split_off(self.index);
+                    let len = rest.len();
+                    self.image_paths.extend(new);
+                    if len > 0 {
+                        rest.remove(0);
+                        self.image_paths.append(&mut rest);
+                    }
+
+                    self.show_current()
+                }
+                FileType::Image | FileType::AnimatedImage | FileType::Video => self.show_image(),
+            }
+        };
+
+        match inner() {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                eprintln!("{}", e);
+                Err(e)
+            }
+        }
+    }
+
     fn next(&mut self) {
         let tmp = self.index + 1;
         if tmp < self.image_paths.len() {
             self.index = tmp;
-            if self.show_image().is_err() {
+            if self.show_current().is_err() {
                 self.image_paths.remove(self.index);
                 self.index -= 1;
                 self.next();
             }
         } else {
-            self.show_image().expect("Wrong");
+            self.show_current().expect("Wrong");
         }
     }
 
     fn prev(&mut self) {
         if self.index != 0 {
             self.index -= 1;
-            if self.show_image().is_err() {
+            if self.show_current().is_err() {
                 self.image_paths.remove(self.index);
                 if self.index != 0 {
                     self.index -= 1;
@@ -197,7 +260,7 @@ impl Viewer {
                 }
             }
         } else {
-            self.show_image().expect("This shouldn't happen");
+            self.show_current().expect("This shouldn't happen");
         }
     }
 
@@ -235,7 +298,6 @@ impl Viewer {
             Err(e) => {
                 self.cur_original_pixbuf = None;
                 self.bottom.set_index(None);
-                eprintln!("{}", e);
                 Err(e)
             }
         }
@@ -319,7 +381,7 @@ impl Viewer {
     fn jump_to_start(&mut self) {
         self.index = 0;
         while self.image_paths.len() > 0 {
-            if let Err(_) = self.show_image() {
+            if let Err(_) = self.show_current() {
                 self.image_paths.remove(0);
             } else {
                 break;
@@ -330,7 +392,7 @@ impl Viewer {
     fn jump_to_end(&mut self) {
         self.index = self.image_paths.len() - 1;
         while self.image_paths.len() > 0 {
-            if let Err(_) = self.show_image() {
+            if let Err(_) = self.show_current() {
                 let len = self.image_paths.len() - 1;
                 self.image_paths.remove(len);
                 self.index -= 1;

@@ -27,3 +27,7 @@ thread_local! {
 pub fn mime_type_file<P: AsRef<Path>>(path: P) -> Result<Mime, failure::Error> {
     COOKIE.with(move |cookie| Ok(cookie.file(path)?.as_str().parse()?))
 }
+
+lazy_static! {
+    pub static ref APPLICATION_ZIP: Mime = "application/zip".parse().unwrap();
+}

@@ -1,14 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use gtk;
 use gtk::prelude::*;
 
 use keys::{KeyAction, KeyMap, KeyPress};
 use scrollable_image::ScrollT;
 use viewer::Viewer;
 impl Viewer {
-    pub(in viewer) fn setup_keys(keymap: KeyMap, viewer: &Rc<RefCell<Viewer>>) {
+    pub(in viewer) fn setup(keymap: KeyMap, viewer: &Rc<RefCell<Viewer>>) {
         let clone = viewer.clone();
         viewer
             .borrow_mut()
@@ -18,7 +17,7 @@ impl Viewer {
                 if let Some(action) = keymap.get(&KeyPress(key_event.get_keyval())) {
                     use self::KeyAction::*;
                     match *action {
-                        Quit => gtk::main_quit(),
+                        Quit => clone.borrow_mut().quit(),
                         Next => clone.borrow_mut().next(),
                         Previous => clone.borrow_mut().prev(),
                         ScaleToFitCurrent => clone.borrow_mut().scale_to_fit_current(),
@@ -44,5 +43,11 @@ impl Viewer {
                     Inhibit(false)
                 }
             });
+
+        let clone = viewer.clone();
+        viewer.borrow_mut().win.connect_delete_event(move |_, _| {
+            clone.borrow_mut().quit();
+            Inhibit(false)
+        });
     }
 }
