@@ -185,6 +185,7 @@ impl Viewer {
         ret
     }
 
+    // needed because gtk::main_quit calls exit and tempdirs destructor doesn't run
     fn quit(&mut self) {
         for dir in self.tempdirs.drain(0..) {
             dir.close().expect("Can't close tempdir");
