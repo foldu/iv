@@ -6,6 +6,7 @@ use std::io;
 use directories::BaseDirs;
 use failure;
 use gdk::ModifierType;
+use gdk_pixbuf::InterpType;
 use gtk;
 use serde::de::{self, Deserializer, Visitor};
 use serde::ser::Serializer;
@@ -14,10 +15,24 @@ use toml;
 
 use keys::{KeyAction, KeyMap, KeyPress};
 
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case", remote = "InterpType")]
+#[allow(dead_code)]
+enum InterpTypeDef {
+    Nearest,
+    Tiles,
+    Bilinear,
+    Hyper,
+    // the fuck this shit
+    __Unknown(i32),
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub keymap: KeyMap,
     pub scrollbars: bool,
+    #[serde(with = "InterpTypeDef")]
+    pub scaling_algo: InterpType,
 }
 
 impl<'de> Deserialize<'de> for KeyPress {
@@ -97,6 +112,7 @@ impl Default for Config {
                 "b" => JumpToStart,
                 "e" => JumpToEnd
             },
+            scaling_algo: InterpType::Bilinear,
         }
     }
 }

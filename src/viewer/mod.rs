@@ -6,8 +6,7 @@ use std::rc::Rc;
 
 use failure;
 use gdk::ScreenExt;
-use gdk_pixbuf;
-use gdk_pixbuf::{Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
+use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
 use gtk;
 use gtk::prelude::*;
 use mime;
@@ -31,6 +30,7 @@ pub struct Viewer {
     cur_ratio: Percent,
     show_status: bool,
     tempdirs: Vec<TempDir>,
+    scaling_algo: InterpType,
 }
 
 type Percent = f64;
@@ -145,6 +145,7 @@ impl Viewer {
         image_paths: Vec<PathBuf>,
         show_status: bool,
         with_scrollbars: bool,
+        scaling_algo: InterpType,
         keymap: KeyMap,
     ) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
@@ -178,6 +179,7 @@ impl Viewer {
             cur_ratio: 0.,
             show_status: !show_status,
             tempdirs: Vec::new(),
+            scaling_algo: scaling_algo,
         }));
 
         Viewer::setup(keymap, &ret);
@@ -317,7 +319,7 @@ impl Viewer {
             );
             ratio = new_ratio;
             let new_buf = pixbuf
-                .scale_simple(scaled.0, scaled.1, gdk_pixbuf::InterpType::Bilinear)
+                .scale_simple(scaled.0, scaled.1, self.scaling_algo)
                 .unwrap();
             self.img.set_from_pixbuf(&new_buf);
         }
@@ -347,7 +349,7 @@ impl Viewer {
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
             let scaled = aspect_ratio_zoom((pixbuf.get_width(), pixbuf.get_height()), ratio);
             let new_buf = pixbuf
-                .scale_simple(scaled.0, scaled.1, gdk_pixbuf::InterpType::Bilinear)
+                .scale_simple(scaled.0, scaled.1, self.scaling_algo)
                 .unwrap();
             self.img.set_from_pixbuf(&new_buf);
         }
