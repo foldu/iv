@@ -40,39 +40,8 @@ mod viewer;
 use viewer::Viewer;
 
 fn run() -> Result<(), failure::Error> {
-    gtk::init().map_err(|e| format_err!("Can't init gtk: {}", e))?;
-
     let opt = Opt::from_args();
-    let (images, hide_status) = match opt {
-        Opt {
-            paths,
-            hide_status,
-            recursive,
-        } => {
-            if recursive {
-                let mut ret: Vec<PathBuf> = if paths.is_empty() {
-                    find::find_files_rec(".").collect()
-                } else {
-                    paths.into_iter().flat_map(find::find_files_rec).collect()
-                };
-
-                // recursive dirwalking can produce a huge amount of results so why not sort it
-                // in parallel
-                ret.par_sort_unstable();
-                (ret, hide_status)
-            } else {
-                let paths = if paths.is_empty() {
-                    find::find_files(".")
-                        .map_err(|e| format_err!("Can't open current directory: {}", e))?
-                        .collect()
-                } else {
-                    paths
-                };
-                (paths, hide_status)
-            }
-        }
-    };
-
+    gtk::init().map_err(|e| format_err!("Can't init gtk: {}", e))?;
     match config::load() {
         Err(e) => {
             let nice_err = format!("Can't parse config: {}", e);
@@ -93,6 +62,7 @@ fn run() -> Result<(), failure::Error> {
             });
         }
         Ok(config) => {
+            let (images, hide_status) = opt_to_viewer_params(opt)?;
             let app = Viewer::new(
                 images,
                 !hide_status,
@@ -106,6 +76,37 @@ fn run() -> Result<(), failure::Error> {
 
     gtk::main();
     Ok(())
+}
+
+#[inline]
+fn opt_to_viewer_params(
+    Opt {
+        hide_status,
+        recursive,
+        paths,
+    }: Opt,
+) -> Result<(Vec<PathBuf>, bool), failure::Error> {
+    if recursive {
+        let mut ret: Vec<PathBuf> = if paths.is_empty() {
+            find::find_files_rec(".").collect()
+        } else {
+            paths.into_iter().flat_map(find::find_files_rec).collect()
+        };
+
+        // recursive dirwalking can produce a huge amount of results so why not sort it
+        // in parallel
+        ret.par_sort_unstable();
+        Ok((ret, hide_status))
+    } else {
+        let paths = if paths.is_empty() {
+            find::find_files(".")
+                .map_err(|e| format_err!("Can't open current directory: {}", e))?
+                .collect()
+        } else {
+            paths
+        };
+        Ok((paths, hide_status))
+    }
 }
 
 #[derive(StructOpt)]
