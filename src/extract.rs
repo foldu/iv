@@ -18,7 +18,6 @@ pub fn tmp_extract_zip<P: AsRef<Path>>(path: P) -> Result<TempDir, ZipError> {
     let mut fh = BufReader::new(File::open(&path).map_err(|e| ZipError::Io(e))?);
     let mut zip = ZipArchive::new(&mut fh).map_err(|e| ZipError::Zip(e))?;
     let ret = TempDir::new().map_err(|e| ZipError::Io(e))?;
-    println!("GAY");
 
     for i in 0..zip.len() {
         let mut elem = zip.by_index(i).map_err(|e| ZipError::Zip(e))?;
@@ -26,7 +25,6 @@ pub fn tmp_extract_zip<P: AsRef<Path>>(path: P) -> Result<TempDir, ZipError> {
         if let Some(parent) = out_path.parent() {
             fs::create_dir_all(parent).map_err(|e| ZipError::Io(e))?;
         }
-        println!("{:?}", out_path);
 
         if elem.name().ends_with('/') {
             fs::create_dir_all(&out_path).map_err(|e| ZipError::Io(e))?;

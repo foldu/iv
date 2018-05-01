@@ -83,7 +83,11 @@ fn guess_file_type<P: AsRef<Path>>(path: P) -> Result<FileType, failure::Error> 
     } else if mime == *util::APPLICATION_ZIP {
         Ok(FileType::Zip)
     } else {
-        Err(format_err!("Unsupported mime type: {}", mime))
+        Err(format_err!(
+            "Can't open file {:?}: Unsupported mime type: {}",
+            path,
+            mime
+        ))
     }
 }
 

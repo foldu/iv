@@ -24,6 +24,7 @@ extern crate lazy_static;
 use std::path::PathBuf;
 use std::process::exit;
 
+use gtk::prelude::*;
 use rayon::prelude::*;
 use structopt::StructOpt;
 
@@ -72,16 +73,36 @@ fn run() -> Result<(), failure::Error> {
         }
     };
 
-    let config = config::load()?;
-
-    let app = Viewer::new(
-        images,
-        !hide_status,
-        config.scrollbars,
-        config.scaling_algo,
-        config.keymap,
-    );
-    app.borrow_mut().show_all();
+    match config::load() {
+        Err(e) => {
+            let nice_err = format!("Can't parse config: {}", e);
+            eprintln!("{}", nice_err);
+            let win = gtk::Window::new(gtk::WindowType::Toplevel);
+            gtk::idle_add(move || {
+                let dialog = gtk::MessageDialog::new(
+                    Some(&win),
+                    gtk::DialogFlags::empty(),
+                    gtk::MessageType::Error,
+                    gtk::ButtonsType::Close,
+                    &nice_err,
+                );
+                dialog.run();
+                dialog.destroy();
+                gtk::main_quit();
+                Continue(false)
+            });
+        }
+        Ok(config) => {
+            let app = Viewer::new(
+                images,
+                !hide_status,
+                config.scrollbars,
+                config.scaling_algo,
+                config.keymap,
+            );
+            app.borrow_mut().show_all();
+        }
+    }
 
     gtk::main();
     Ok(())
