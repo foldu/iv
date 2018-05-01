@@ -13,9 +13,9 @@ use mime;
 use tempfile::TempDir;
 
 use bottom_bar::BottomBar;
+use config::Config;
 use extract::tmp_extract_zip;
 use find;
-use keys::KeyMap;
 use scrollable_image::ScrollableImage;
 use util;
 
@@ -148,9 +148,7 @@ impl Viewer {
     pub fn new(
         image_paths: Vec<PathBuf>,
         show_status: bool,
-        with_scrollbars: bool,
-        scaling_algo: InterpType,
-        keymap: KeyMap,
+        config: Config,
     ) -> Rc<RefCell<Viewer>> {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
         win.set_title("iv");
@@ -165,7 +163,7 @@ impl Viewer {
 
         win.set_icon_name("emblem-photos");
 
-        let img = ScrollableImage::new(with_scrollbars);
+        let img = ScrollableImage::new(config.scrollbars);
         let bottom = BottomBar::new();
         let layout = gtk::Box::new(gtk::Orientation::Vertical, 0);
         layout.pack_start(img.as_widget(), true, true, 0);
@@ -183,10 +181,10 @@ impl Viewer {
             cur_ratio: 0.,
             show_status: !show_status,
             tempdirs: Vec::new(),
-            scaling_algo: scaling_algo,
+            scaling_algo: config.scaling_algo,
         }));
 
-        Viewer::setup(keymap, &ret);
+        Viewer::setup(config.keymap, &ret);
 
         ret
     }

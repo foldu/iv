@@ -63,13 +63,7 @@ fn run() -> Result<(), failure::Error> {
         }
         Ok(config) => {
             let (images, hide_status) = opt_to_viewer_params(opt)?;
-            let app = Viewer::new(
-                images,
-                !hide_status,
-                config.scrollbars,
-                config.scaling_algo,
-                config.keymap,
-            );
+            let app = Viewer::new(images, !hide_status, config);
             app.borrow_mut().show_all();
         }
     }
