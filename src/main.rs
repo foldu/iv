@@ -111,48 +111,6 @@ fn run() -> Result<(), failure::Error> {
 #[derive(StructOpt)]
 #[structopt(name = "iv")]
 /// It views images
-///
-/// Default keybinds:
-///
-/// q - Quit
-///
-/// n - Next image
-///
-/// p - Previous image
-///
-/// b - First image
-///
-/// e - Last image
-///
-/// + - Zoom in
-///
-/// - - Zoom out
-///
-/// = - Reset zoom
-///
-/// o - Show image in original size
-///
-/// w - Resize window to fit image
-///
-/// W - Resize window to fit original image
-///
-/// k - Scroll up
-///
-/// j - Scroll down
-///
-/// h - Scroll left
-///
-/// l - Scroll right
-///
-/// g - Jump to top of image
-///
-/// G - Jump to bottom of image
-///
-/// 0 - Jump left
-///
-/// $ - Jump right
-///
-/// m - Hide status bar
 struct Opt {
     #[structopt(name = "PATHS", parse(from_os_str))]
     /// The things you want to view
