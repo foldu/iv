@@ -40,32 +40,27 @@ enum ImageKind {
     Normal(Pixbuf),
 }
 
-fn load_image<P: AsRef<Path>>(path: P) -> Result<(String, ImageKind), failure::Error> {
+fn load_image<P: AsRef<Path>>(
+    path: P,
+    ftype: FileType,
+) -> Result<(String, ImageKind), failure::Error> {
     let path = path.as_ref();
     let path_str = if let Some(path) = path.to_str() {
         path
     } else {
-        return Err(format_err!("Can't decode path {:?} as UTF-8", path));
-    };
-
-    let mime = util::mime_type_file(&path_str)
-        .map_err(|e| format_err!("Can't get mime type of file {:?}: {}", path, e))?;
-
-    let ret = if mime == mime::IMAGE_GIF {
-        ImageKind::Animated(PixbufAnimation::new_from_file(&path_str)?)
-    } else if mime.type_() == mime::IMAGE {
-        ImageKind::Normal(Pixbuf::new_from_file(&path_str)?)
-    } else {
         return Err(format_err!(
-            "Can't open file {:?}: Can't open files with mime type {}",
-            path,
-            mime
+            "Can't decode path {:?} as UTF-8 and gtk doesn't support non UTF-8 paths",
+            path
         ));
     };
 
-    let filename = path.file_name()
-        .ok_or_else(|| format_err!("Missing filename in path {:?}", path))
-        .map(|filename| filename.to_str().unwrap().to_owned())?;
+    let ret = match ftype {
+        FileType::AnimatedImage => ImageKind::Animated(PixbufAnimation::new_from_file(&path_str)?),
+        FileType::Image => ImageKind::Normal(Pixbuf::new_from_file(&path_str)?),
+        _ => unreachable!(),
+    };
+
+    let filename = path.file_name().unwrap().to_str().unwrap().to_owned();
 
     Ok((filename, ret))
 }
@@ -227,7 +222,9 @@ impl Viewer {
 
                     self.show_current()
                 }
-                FileType::Image | FileType::AnimatedImage | FileType::Video => self.show_image(),
+                FileType::Image | FileType::AnimatedImage | FileType::Video => {
+                    self.show_image(file_type)
+                }
             }
         };
 
@@ -269,8 +266,8 @@ impl Viewer {
         }
     }
 
-    fn show_image(&mut self) -> Result<(), failure::Error> {
-        match load_image(&self.image_paths[self.index]) {
+    fn show_image(&mut self, ftype: FileType) -> Result<(), failure::Error> {
+        match load_image(&self.image_paths[self.index], ftype) {
             Ok((filename, pixbuf)) => {
                 self.win.set_title(&format!("iv - {}", &filename));
 
