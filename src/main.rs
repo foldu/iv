@@ -1,3 +1,4 @@
+#![feature(try_from)]
 #[macro_use]
 extern crate failure;
 extern crate gdk;
@@ -20,6 +21,7 @@ extern crate tempfile;
 extern crate zip;
 #[macro_use]
 extern crate lazy_static;
+extern crate num;
 
 use std::path::PathBuf;
 use std::process::exit;
@@ -33,6 +35,7 @@ mod config;
 mod extract;
 mod find;
 mod keys;
+mod ratio;
 mod scrollable_image;
 mod util;
 mod viewer;

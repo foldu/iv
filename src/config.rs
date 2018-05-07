@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use toml;
 
 use keys::{KeyAction, KeyMap, KeyPress};
+use ratio::Ratio;
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", remote = "InterpType")]
@@ -27,12 +28,27 @@ enum InterpTypeDef {
     __Unknown(i32),
 }
 
+#[derive(Debug, Serialize, Deserialize, Copy, Clone)]
+pub struct WinGeom {
+    pub scaling: f64,
+    pub ratio: Ratio,
+}
+
+fn def_geom() -> WinGeom {
+    WinGeom {
+        scaling: 0.5,
+        ratio: Ratio::new(16, 10).unwrap(),
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub keymap: KeyMap,
     pub scrollbars: bool,
     #[serde(with = "InterpTypeDef")]
     pub scaling_algo: InterpType,
+    #[serde(default = "def_geom")]
+    pub initial_geom: WinGeom,
 }
 
 impl<'de> Deserialize<'de> for KeyPress {
@@ -113,6 +129,7 @@ impl Default for Config {
                 "e" => JumpToEnd
             },
             scaling_algo: InterpType::Bilinear,
+            initial_geom: def_geom(),
         }
     }
 }

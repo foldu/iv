@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use failure;
-use gdk::ScreenExt;
 use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
 use gtk;
 use gtk::prelude::*;
@@ -13,9 +12,10 @@ use mime;
 use tempfile::TempDir;
 
 use bottom_bar::BottomBar;
-use config::Config;
+use config::{Config, WinGeom};
 use extract::tmp_extract_zip;
 use find;
+use ratio::*;
 use scrollable_image::ScrollableImage;
 use util;
 
@@ -31,6 +31,7 @@ pub struct Viewer {
     show_status: bool,
     tempdirs: Vec<TempDir>,
     scaling_algo: InterpType,
+    initial_geom: WinGeom,
 }
 
 type Percent = f64;
@@ -86,31 +87,6 @@ fn guess_file_type<P: AsRef<Path>>(path: P) -> Result<FileType, failure::Error> 
     }
 }
 
-type V2 = (i32, i32);
-
-fn aspect_ratio_zoom(orig: V2, ratio: Percent) -> V2 {
-    (
-        (orig.0 as f64 * ratio).floor() as i32,
-        (orig.1 as f64 * ratio).floor() as i32,
-    )
-}
-
-fn scale_with_aspect_ratio(orig: V2, scale_to: V2) -> (Percent, V2) {
-    let ratio = f64::min(
-        scale_to.0 as f64 / orig.0 as f64,
-        scale_to.1 as f64 / orig.1 as f64,
-    );
-    let scaled = aspect_ratio_zoom(orig, ratio);
-    (ratio, scaled)
-}
-
-fn optimal_16_10_win_size(win: &gtk::Window) -> V2 {
-    let scr = win.get_screen().expect("Can't get display size");
-    let dims = scr.get_monitor_geometry(scr.get_number());
-    let (_, optimal) = scale_with_aspect_ratio((16, 10), (dims.width / 2, dims.height / 2));
-    optimal
-}
-
 enum Zoom {
     In,
     Out,
@@ -148,7 +124,8 @@ impl Viewer {
         let win = gtk::Window::new(gtk::WindowType::Toplevel);
         win.set_title("iv");
 
-        let optimal = optimal_16_10_win_size(&win);
+        let optimal =
+            gtk_win_scale(&win, config.initial_geom.ratio, config.initial_geom.scaling).unwrap();
         win.set_default_size(optimal.0, optimal.1);
         win.set_position(gtk::WindowPosition::CenterAlways);
 
@@ -177,6 +154,7 @@ impl Viewer {
             show_status: !show_status,
             tempdirs: Vec::new(),
             scaling_algo: config.scaling_algo,
+            initial_geom: config.initial_geom,
         }));
 
         Viewer::setup(config.keymap, &ret);
@@ -312,10 +290,10 @@ impl Viewer {
         let alloc = self.img.get_allocation();
         let mut ratio = self.cur_ratio;
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
-            let (new_ratio, scaled) = scale_with_aspect_ratio(
-                (pixbuf.get_width(), pixbuf.get_height()),
-                (alloc.width, alloc.height),
-            );
+            let (new_ratio, scaled) = Ratio::new(pixbuf.get_width(), pixbuf.get_height())
+                .unwrap()
+                .scale(alloc.width, alloc.height)
+                .unwrap();
             ratio = new_ratio;
             let new_buf = pixbuf
                 .scale_simple(scaled.0, scaled.1, self.scaling_algo)
@@ -346,7 +324,8 @@ impl Viewer {
         }
         let ratio = next_zoom_stage(self.cur_ratio, zoomtype);
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
-            let scaled = aspect_ratio_zoom((pixbuf.get_width(), pixbuf.get_height()), ratio);
+            let scaled = rescale(ratio, pixbuf.get_width(), pixbuf.get_height()).unwrap();
+            //aspect_ratio_zoom((pixbuf.get_width(), pixbuf.get_height()), ratio);
             let new_buf = pixbuf
                 .scale_simple(scaled.0, scaled.1, self.scaling_algo)
                 .unwrap();
@@ -376,7 +355,11 @@ impl Viewer {
     }
 
     fn resize_to_fit_screen(&self) {
-        let optimal = optimal_16_10_win_size(&self.win);
+        let optimal = gtk_win_scale(
+            &self.win,
+            self.initial_geom.ratio,
+            self.initial_geom.scaling,
+        ).unwrap();
         self.win.resize(optimal.0, optimal.1);
     }
 

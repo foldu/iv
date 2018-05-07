@@ -23,6 +23,7 @@ directories = "0.8.5"
 zip = { version = "0.3.2", default-features = false }
 tempfile = "3.0.1"
 lazy_static = "1.0.0"
+num = "0.1.42"
 
 [profile.release]
 lto = true
