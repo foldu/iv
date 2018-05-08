@@ -21,6 +21,8 @@ extern crate tempfile;
 extern crate zip;
 #[macro_use]
 extern crate lazy_static;
+extern crate indexmap;
+extern crate noisy_float;
 extern crate num;
 
 use std::path::PathBuf;
@@ -35,6 +37,7 @@ mod config;
 mod extract;
 mod find;
 mod keys;
+mod percent;
 mod ratio;
 mod scrollable_image;
 mod util;

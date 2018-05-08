@@ -2,7 +2,7 @@ use gtk;
 use gtk::prelude::*;
 use pango;
 
-type Percent = f64;
+use percent::Percent;
 
 pub struct BottomBar {
     boxx: gtk::Box,
@@ -46,7 +46,7 @@ impl BottomBar {
 
     pub fn set_zoom(&self, percent: Option<Percent>) {
         match percent {
-            Some(percent) => self.zoom.set_text(&format!("| {:.*}%", 2, percent * 100.)),
+            Some(percent) => self.zoom.set_text(&format!("| {}", percent)),
             None => self.zoom.set_text(""),
         }
     }

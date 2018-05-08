@@ -7,6 +7,8 @@ use gtk::{self, prelude::*};
 use num::{FromPrimitive, ToPrimitive};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
+use percent::Percent;
+
 /// A ratio. Can be used for more than just correct aspect ratio transforms.
 #[derive(Debug, Copy, Clone)]
 pub struct Ratio(f64, f64);
@@ -55,9 +57,9 @@ impl<'de> Deserialize<'de> for Ratio {
 }
 
 /// Rescale operations that's guaranteed to work
-impl ops::Mul<f64> for Ratio {
+impl ops::Mul<Percent> for Ratio {
     type Output = Self;
-    fn mul(self, rhs: f64) -> Self {
+    fn mul(self, rhs: Percent) -> Self {
         let res = rescale(rhs, self.0, self.1).unwrap();
         Ratio(res.0, res.1)
     }
@@ -68,9 +70,10 @@ impl Ratio {
         Some(Ratio(a.to_f64()?, b.to_f64()?))
     }
 
-    pub fn scale<T: FromPrimitive + ToPrimitive>(&self, a: T, b: T) -> Option<(f64, (T, T))> {
+    pub fn scale<T: FromPrimitive + ToPrimitive>(&self, a: T, b: T) -> Option<(Percent, (T, T))> {
         let (a_f, b_f) = (a.to_f64()?, b.to_f64()?);
         let ratio = f64::min(a_f / self.0, b_f / self.1);
+        let ratio = Percent::try_from(ratio).ok()?;
         let scaled = rescale(ratio, T::from_f64(self.0)?, T::from_f64(self.1)?)?;
         Some((ratio, scaled))
     }
@@ -78,7 +81,7 @@ impl Ratio {
 
 /// Rescales number with f64 factor
 /// returns None if result can't be converted back to original data type
-pub fn rescale<T: FromPrimitive + ToPrimitive>(fact: f64, a: T, b: T) -> Option<(T, T)> {
+pub fn rescale<T: FromPrimitive + ToPrimitive>(fact: Percent, a: T, b: T) -> Option<(T, T)> {
     Some((
         T::from_f64((a.to_f64()? * fact).floor())?,
         T::from_f64((b.to_f64()? * fact).floor())?,
@@ -86,7 +89,7 @@ pub fn rescale<T: FromPrimitive + ToPrimitive>(fact: f64, a: T, b: T) -> Option<
 }
 
 /// returns None if fact is 0, -inf, inf or NaN or if win doesn't have a screen
-pub fn gtk_win_scale(win: &gtk::Window, rat: Ratio, fact: f64) -> Option<(i32, i32)> {
+pub fn gtk_win_scale(win: &gtk::Window, rat: Ratio, fact: Percent) -> Option<(i32, i32)> {
     let scr = win.get_screen()?;
     let dims = scr.get_monitor_geometry(scr.get_number());
     let scale_dims = rescale(fact, dims.width, dims.height)?;

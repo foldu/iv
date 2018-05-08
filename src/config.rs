@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use toml;
 
 use keys::{KeyAction, KeyMap, KeyPress};
+use percent::Percent;
 use ratio::Ratio;
 
 #[derive(Deserialize, Serialize)]
@@ -30,13 +31,13 @@ enum InterpTypeDef {
 
 #[derive(Debug, Serialize, Deserialize, Copy, Clone)]
 pub struct WinGeom {
-    pub scaling: f64,
+    pub scaling: Percent,
     pub ratio: Ratio,
 }
 
 fn def_geom() -> WinGeom {
     WinGeom {
-        scaling: 0.5,
+        scaling: Percent::from(50_u32),
         ratio: Ratio::new(16, 10).unwrap(),
     }
 }

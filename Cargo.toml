@@ -24,6 +24,8 @@ zip = { version = "0.3.2", default-features = false }
 tempfile = "3.0.1"
 lazy_static = "1.0.0"
 num = "0.1.42"
+indexmap = "1.0.1"
+noisy_float = "0.1.5"
 
 [profile.release]
 lto = true

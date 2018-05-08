@@ -15,6 +15,7 @@ use bottom_bar::BottomBar;
 use config::{Config, WinGeom};
 use extract::tmp_extract_zip;
 use find;
+use percent::Percent;
 use ratio::*;
 use scrollable_image::ScrollableImage;
 use util;
@@ -27,14 +28,17 @@ pub struct Viewer {
     image_paths: Vec<PathBuf>,
     index: usize,
     cur_original_pixbuf: Option<Pixbuf>,
-    cur_ratio: Percent,
+    cur_zoom_level: Percent,
     show_status: bool,
     tempdirs: Vec<TempDir>,
     scaling_algo: InterpType,
     initial_geom: WinGeom,
 }
 
-type Percent = f64;
+enum Zoom {
+    In,
+    Out,
+}
 
 enum ImageKind {
     Animated(PixbufAnimation),
@@ -87,32 +91,11 @@ fn guess_file_type<P: AsRef<Path>>(path: P) -> Result<FileType, failure::Error> 
     }
 }
 
-enum Zoom {
-    In,
-    Out,
-}
-
 enum FileType {
     Video,
     AnimatedImage,
     Image,
     Zip,
-}
-
-fn next_zoom_stage(mut percent: Percent, zoom_opt: Zoom) -> Percent {
-    match zoom_opt {
-        Zoom::In => {
-            percent += 0.25;
-        }
-        Zoom::Out => {
-            percent -= 0.25;
-        }
-    };
-
-    match (percent / 0.25).round() * 0.25 {
-        x if x < 0.25 => 0.25,
-        x => x,
-    }
 }
 
 impl Viewer {
@@ -150,7 +133,7 @@ impl Viewer {
             image_paths: image_paths,
             index: 0,
             cur_original_pixbuf: None,
-            cur_ratio: 0.,
+            cur_zoom_level: Percent::default(),
             show_status: !show_status,
             tempdirs: Vec::new(),
             scaling_algo: config.scaling_algo,
@@ -288,7 +271,7 @@ impl Viewer {
             return;
         }
         let alloc = self.img.get_allocation();
-        let mut ratio = self.cur_ratio;
+        let mut ratio = self.cur_zoom_level;
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
             let (new_ratio, scaled) = Ratio::new(pixbuf.get_width(), pixbuf.get_height())
                 .unwrap()
@@ -304,7 +287,7 @@ impl Viewer {
     }
 
     fn set_zoom_info(&mut self, percent: Percent) {
-        self.cur_ratio = percent;
+        self.cur_zoom_level = percent;
         self.bottom.set_zoom(Some(percent));
     }
 
@@ -315,23 +298,27 @@ impl Viewer {
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
             self.img.set_from_pixbuf(pixbuf);
         }
-        self.set_zoom_info(1.);
+        self.set_zoom_info(Percent::from(100_u32));
     }
 
     fn zoom(&mut self, zoomtype: Zoom) {
         if self.cur_original_pixbuf.is_none() {
             return;
         }
-        let ratio = next_zoom_stage(self.cur_ratio, zoomtype);
+        let percent = match zoomtype {
+            Zoom::In => self.cur_zoom_level
+                .step_next(Percent::from(25_u32), Percent::from(25_u32)),
+            Zoom::Out => self.cur_zoom_level
+                .step_prev(Percent::from(25_u32), Percent::from(25_u32)),
+        };
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
-            let scaled = rescale(ratio, pixbuf.get_width(), pixbuf.get_height()).unwrap();
-            //aspect_ratio_zoom((pixbuf.get_width(), pixbuf.get_height()), ratio);
+            let scaled = rescale(percent, pixbuf.get_width(), pixbuf.get_height()).unwrap();
             let new_buf = pixbuf
                 .scale_simple(scaled.0, scaled.1, self.scaling_algo)
                 .unwrap();
             self.img.set_from_pixbuf(&new_buf);
         }
-        self.set_zoom_info(ratio);
+        self.set_zoom_info(percent);
     }
 
     fn zoom_in(&mut self) {
