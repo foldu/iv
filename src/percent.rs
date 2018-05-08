@@ -66,6 +66,7 @@ derive_from!(u8);
 derive_from!(u16);
 derive_from!(u32);
 derive_from!(u64);
+derive_from!(usize);
 
 macro_rules! derive_float_into {
     ($t:ty) => {
@@ -157,6 +158,7 @@ derive_mul!(u8);
 derive_mul!(u16);
 derive_mul!(u32);
 derive_mul!(u64);
+derive_mul!(usize);
 
 derive_mul!(i8);
 derive_mul!(i16);
