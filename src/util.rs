@@ -18,8 +18,10 @@ thread_local! {
         cflags.insert(flags::NO_CHECK_TEXT);
         cflags.insert(flags::NO_CHECK_TOKENS);
         let ret = Cookie::open(cflags).expect("Can't create libmagic cookie");
-        ret.load(&["/usr/share/file/misc/magic.mgc"])
-            .expect("Can't load libmagic database");
+        // multiple paths not yet implemented
+        if ret.load(&["/usr/share/file/misc/magic.mgc"]).is_err() {
+            ret.load(&["/usr/share/misc/magic.mgc"]).expect("Can't load libmagic database");
+        }
         ret
     }
 }
