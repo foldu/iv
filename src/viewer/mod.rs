@@ -62,6 +62,12 @@ fn load_image<P: AsRef<Path>>(
     let ret = match ftype {
         FileType::AnimatedImage => ImageKind::Animated(PixbufAnimation::new_from_file(&path_str)?),
         FileType::Image => ImageKind::Normal(Pixbuf::new_from_file(&path_str)?),
+        FileType::Video => {
+            return Err(format_err!(
+                "Can't open {}: Support for videos currently not implemented",
+                path_str
+            ))
+        }
         _ => unreachable!(),
     };
 
