@@ -52,20 +52,7 @@ fn run() -> Result<(), failure::Error> {
         Err(e) => {
             let nice_err = format!("Can't parse config: {}", e);
             eprintln!("{}", nice_err);
-            let win = gtk::Window::new(gtk::WindowType::Toplevel);
-            gtk::idle_add(move || {
-                let dialog = gtk::MessageDialog::new(
-                    Some(&win),
-                    gtk::DialogFlags::empty(),
-                    gtk::MessageType::Error,
-                    gtk::ButtonsType::Close,
-                    &nice_err,
-                );
-                dialog.run();
-                dialog.destroy();
-                gtk::main_quit();
-                Continue(false)
-            });
+            display_error_dialog(nice_err);
         }
         Ok(config) => {
             let (images, hide_status) = opt_to_viewer_params(opt)?;
@@ -76,6 +63,23 @@ fn run() -> Result<(), failure::Error> {
 
     gtk::main();
     Ok(())
+}
+
+fn display_error_dialog(nice_err: String) {
+    let win = gtk::Window::new(gtk::WindowType::Toplevel);
+    gtk::idle_add(move || {
+        let dialog = gtk::MessageDialog::new(
+            Some(&win),
+            gtk::DialogFlags::empty(),
+            gtk::MessageType::Error,
+            gtk::ButtonsType::Close,
+            &nice_err,
+        );
+        dialog.run();
+        dialog.destroy();
+        gtk::main_quit();
+        Continue(false)
+    });
 }
 
 #[inline]
