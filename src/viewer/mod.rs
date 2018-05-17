@@ -35,6 +35,7 @@ pub struct Viewer {
     initial_geom: WinGeom,
 }
 
+#[derive(Debug, Clone, Copy)]
 enum Zoom {
     In,
     Out,
@@ -97,6 +98,7 @@ fn guess_file_type<P: AsRef<Path>>(path: P) -> Result<FileType, failure::Error> 
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 enum FileType {
     Video,
     AnimatedImage,
@@ -132,11 +134,11 @@ impl Viewer {
 
         win.add(&layout);
         let ret = Rc::new(RefCell::new(Viewer {
-            win: win,
-            img: img,
-            bottom: bottom,
+            win,
+            img,
+            bottom,
             _layout: layout,
-            image_paths: image_paths,
+            image_paths,
             index: 0,
             cur_original_pixbuf: None,
             cur_zoom_level: Percent::default(),
@@ -298,6 +300,7 @@ impl Viewer {
     }
 
     fn original_size(&mut self) {
+        // curse you borrowck
         if self.cur_original_pixbuf.is_none() {
             return;
         }
@@ -336,7 +339,7 @@ impl Viewer {
     }
 
     fn resize_to_fit_image(&mut self) {
-        if let None = self.cur_original_pixbuf {
+        if self.cur_original_pixbuf.is_none() {
             return;
         }
         self.original_size();
@@ -358,8 +361,8 @@ impl Viewer {
 
     fn jump_to_start(&mut self) {
         self.index = 0;
-        while self.image_paths.len() > 0 {
-            if let Err(_) = self.show_current() {
+        while !self.image_paths.is_empty() {
+            if self.show_current().is_err() {
                 self.image_paths.remove(0);
             } else {
                 break;
@@ -369,8 +372,8 @@ impl Viewer {
 
     fn jump_to_end(&mut self) {
         self.index = self.image_paths.len() - 1;
-        while self.image_paths.len() > 0 {
-            if let Err(_) = self.show_current() {
+        while !self.image_paths.is_empty() {
+            if self.show_current().is_err() {
                 let len = self.image_paths.len() - 1;
                 self.image_paths.remove(len);
                 self.index -= 1;

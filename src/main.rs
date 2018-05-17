@@ -37,6 +37,7 @@ mod config;
 mod extract;
 mod find;
 mod keys;
+#[cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
 mod percent;
 mod ratio;
 mod scrollable_image;

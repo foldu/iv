@@ -48,7 +48,7 @@ impl<'de> Deserialize<'de> for Ratio {
             }
 
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                Ratio::try_from(value).map_err(|e| E::custom(format!("{}", e)))
+                Ratio::try_from(value).map_err(|e| E::custom(e.to_string()))
             }
         }
 
@@ -66,11 +66,15 @@ impl ops::Mul<Percent> for Ratio {
 }
 
 impl Ratio {
-    pub fn new<T: ToPrimitive>(a: T, b: T) -> Option<Ratio> {
+    pub fn new<T: ToPrimitive + Copy>(a: T, b: T) -> Option<Ratio> {
         Some(Ratio(a.to_f64()?, b.to_f64()?))
     }
 
-    pub fn scale<T: FromPrimitive + ToPrimitive>(&self, a: T, b: T) -> Option<(Percent, (T, T))> {
+    pub fn scale<T: FromPrimitive + ToPrimitive + Copy>(
+        &self,
+        a: T,
+        b: T,
+    ) -> Option<(Percent, (T, T))> {
         let (a_f, b_f) = (a.to_f64()?, b.to_f64()?);
         let ratio = f64::min(a_f / self.0, b_f / self.1);
         let ratio = Percent::try_from(ratio).ok()?;
@@ -81,7 +85,7 @@ impl Ratio {
 
 /// Rescales number with f64 factor
 /// returns None if result can't be converted back to original data type
-pub fn rescale<T: FromPrimitive + ToPrimitive>(fact: Percent, a: T, b: T) -> Option<(T, T)> {
+pub fn rescale<T: FromPrimitive + ToPrimitive + Copy>(fact: Percent, a: T, b: T) -> Option<(T, T)> {
     Some((
         T::from_f64((a.to_f64()? * fact).floor())?,
         T::from_f64((b.to_f64()? * fact).floor())?,

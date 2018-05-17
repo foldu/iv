@@ -27,11 +27,11 @@ impl BottomBar {
         boxx.set_valign(gtk::Align::End);
         boxx.set_halign(gtk::Align::End);
         BottomBar {
-            boxx: boxx,
-            resolution: resolution,
-            filename: filename,
-            zoom: zoom,
-            image_index: image_index,
+            boxx,
+            resolution,
+            filename,
+            zoom,
+            image_index,
         }
     }
 

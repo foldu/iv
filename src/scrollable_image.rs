@@ -13,17 +13,14 @@ impl ScrollableImage {
         let image = gtk::Image::new();
         scroll_view.add(&image);
         if !with_scrollbars {
-            scroll_view
-                .get_hscrollbar()
-                .map(|scroll| scroll.set_visible(false));
-            scroll_view
-                .get_vscrollbar()
-                .map(|scroll| scroll.set_visible(false));
+            if let Some(scroll) = scroll_view.get_hscrollbar() {
+                scroll.set_visible(false);
+            }
+            if let Some(scroll) = scroll_view.get_vscrollbar() {
+                scroll.set_visible(false);
+            }
         }
-        ScrollableImage {
-            scroll_view: scroll_view,
-            image: image,
-        }
+        ScrollableImage { scroll_view, image }
     }
 
     pub fn set_from_animation(&self, buf: &PixbufAnimation) {
@@ -79,6 +76,7 @@ impl ScrollableImage {
 }
 
 // gtk scrolltype is missing things
+#[derive(Debug, Copy, Clone)]
 pub enum ScrollT {
     Up,
     Down,
