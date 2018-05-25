@@ -215,8 +215,6 @@ impl Viewer {
                 self.index -= 1;
                 self.next();
             }
-        } else {
-            self.show_current().expect("Wrong");
         }
     }
 
@@ -230,8 +228,6 @@ impl Viewer {
                     self.prev();
                 }
             }
-        } else {
-            self.show_current().expect("This shouldn't happen");
         }
     }
 
@@ -315,9 +311,11 @@ impl Viewer {
             return;
         }
         let percent = match zoomtype {
-            Zoom::In => self.cur_zoom_level
+            Zoom::In => self
+                .cur_zoom_level
                 .step_next(Percent::from(25_u32), Percent::from(25_u32)),
-            Zoom::Out => self.cur_zoom_level
+            Zoom::Out => self
+                .cur_zoom_level
                 .step_prev(Percent::from(25_u32), Percent::from(25_u32)),
         };
         if let Some(ref pixbuf) = self.cur_original_pixbuf {
