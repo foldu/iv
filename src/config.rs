@@ -44,12 +44,12 @@ fn def_geom() -> WinGeom {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
-    pub keymap: KeyMap,
     pub scrollbars: bool,
     #[serde(with = "InterpTypeDef")]
     pub scaling_algo: InterpType,
     #[serde(default = "def_geom")]
     pub initial_geom: WinGeom,
+    pub keymap: KeyMap,
 }
 
 impl<'de> Deserialize<'de> for KeyPress {
@@ -63,8 +63,10 @@ impl Serialize for KeyPress {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&gtk::accelerator_name(self.0, ModifierType::empty())
-            .expect("Tried to serialize invalid key combination"))
+        serializer.serialize_str(
+            &gtk::accelerator_name(self.0, ModifierType::empty())
+                .expect("Tried to serialize invalid key combination"),
+        )
     }
 }
 
@@ -142,7 +144,10 @@ pub fn load() -> Result<Config, failure::Error> {
         Err(e) => {
             if e.kind() == io::ErrorKind::NotFound {
                 let ret = Config::default();
-                fs::write(&path, toml::to_string_pretty(&ret).unwrap())?;
+                fs::write(
+                    &path,
+                    toml::to_string_pretty(&ret).expect("Can't deserialize default config"),
+                )?;
                 eprintln!("Default config written to {:?}", path);
                 Ok(ret)
             } else {
