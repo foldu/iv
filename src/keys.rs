@@ -26,6 +26,9 @@ pub enum KeyAction {
     ToggleStatus,
     JumpToStart,
     JumpToEnd,
+    RotateClockwise,
+    RotateCounterClockwise,
+    RotateUpsideDown,
 }
 
 pub type KeyMap = HashMap<KeyPress, KeyAction>;

@@ -5,7 +5,9 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use failure;
-use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt};
+use gdk_pixbuf::{
+    InterpType, Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt, PixbufRotation,
+};
 use gtk;
 use gtk::prelude::*;
 use mime;
@@ -127,7 +129,7 @@ impl Viewer {
         win.set_icon_name("emblem-photos");
 
         let img = ScrollableImage::new(config.scrollbars);
-        let bottom = BottomBar::new();
+        let bottom = BottomBar::new(&config.bottom_format);
         let layout = gtk::Box::new(gtk::Orientation::Vertical, 0);
         layout.pack_start(img.as_widget(), true, true, 0);
         layout.pack_end(bottom.as_widget(), false, false, 0);
@@ -240,7 +242,6 @@ impl Viewer {
                     ImageKind::Animated(anim) => {
                         self.img.set_from_animation(&anim);
                         self.cur_original_pixbuf = None;
-                        self.bottom.set_zoom(None);
                         (anim.get_width(), anim.get_height())
                     }
                     ImageKind::Normal(img) => {
@@ -251,20 +252,20 @@ impl Viewer {
                     }
                 };
 
-                self.bottom.set_info(&filename, dims);
-
-                if self.image_paths.len() > 1 {
-                    self.bottom
-                        .set_index(Some((self.index + 1, self.image_paths.len())));
-                } else {
-                    self.bottom.set_index(None);
-                }
                 self.scale_to_fit_current();
+
+                self.bottom.set_info(
+                    &filename,
+                    dims,
+                    0,
+                    self.cur_zoom_level,
+                    self.index,
+                    self.image_paths.len(),
+                );
                 Ok(())
             }
             Err(e) => {
                 self.cur_original_pixbuf = None;
-                self.bottom.set_index(None);
                 Err(e)
             }
         }
@@ -292,7 +293,8 @@ impl Viewer {
 
     fn set_zoom_info(&mut self, percent: Percent) {
         self.cur_zoom_level = percent;
-        self.bottom.set_zoom(Some(percent));
+        // FIXME: USELESS ALLOC
+        self.bottom.set_zoom(self.cur_zoom_level);
     }
 
     fn original_size(&mut self) {
@@ -379,6 +381,17 @@ impl Viewer {
                 break;
             }
         }
+    }
+
+    fn rotate(&mut self, rot: PixbufRotation) {
+        let new_orig = if let Some(ref pix) = self.cur_original_pixbuf {
+            pix.rotate_simple(rot)
+        } else {
+            return;
+        };
+
+        self.cur_original_pixbuf = new_orig;
+        self.scale_to_fit_current();
     }
 
     pub fn show_all(&mut self) {

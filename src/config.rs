@@ -44,6 +44,7 @@ fn def_geom() -> WinGeom {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
+    pub bottom_format: String,
     pub scrollbars: bool,
     #[serde(with = "InterpTypeDef")]
     pub scaling_algo: InterpType,
@@ -108,6 +109,7 @@ macro_rules! keymap {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            bottom_format: "%d | %f | %z | %i/%n".to_owned(),
             scrollbars: false,
             keymap: keymap! {
                 "q" => Quit,
@@ -129,7 +131,10 @@ impl Default for Config {
                 "dollar" => ScrollHEnd,
                 "m" => ToggleStatus,
                 "b" => JumpToStart,
-                "e" => JumpToEnd
+                "e" => JumpToEnd,
+                "r" => RotateClockwise,
+                "R" => RotateCounterClockwise,
+                "f" => RotateUpsideDown
             },
             scaling_algo: InterpType::Bilinear,
             initial_geom: def_geom(),

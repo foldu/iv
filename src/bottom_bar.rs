@@ -1,37 +1,56 @@
+use std::fmt::Write;
+
 use gtk;
 use gtk::prelude::*;
-use pango;
 
 use percent::Percent;
+use percent_formatter::{PercentFormatable, PercentFormatter};
+
+// FIXME: file_size is a stub
+struct ImageInfo {
+    filename: String,
+    image_index: usize,
+    nimages: usize,
+    dims: (i32, i32),
+    file_size: String,
+    zoom: Percent,
+}
+
+impl PercentFormatable for ImageInfo {
+    fn try_parse(&self, rest: &str, buf: &mut String) -> Option<usize> {
+        match rest.chars().next()? {
+            'f' => buf.push_str(&self.filename),
+            'd' => write!(buf, "{}x{}", self.dims.0, self.dims.1).unwrap(),
+            'i' => write!(buf, "{}", self.image_index).unwrap(),
+            'n' => write!(buf, "{}", self.nimages).unwrap(),
+            's' => buf.push_str(&self.file_size),
+            'z' => write!(buf, "{}", self.zoom).unwrap(),
+            _ => return None,
+        }
+
+        Some(0)
+    }
+}
 
 pub struct BottomBar {
     boxx: gtk::Box,
-    resolution: gtk::Label,
-    filename: gtk::Label,
-    zoom: gtk::Label,
-    image_index: gtk::Label,
+    label: gtk::Label,
+    info: Option<ImageInfo>,
+    formatter: PercentFormatter,
 }
 
 impl BottomBar {
-    pub fn new() -> BottomBar {
-        let filename = gtk::Label::new(None);
-        filename.set_ellipsize(pango::EllipsizeMode::End);
-        let zoom = gtk::Label::new(None);
-        let image_index = gtk::Label::new(None);
-        let resolution = gtk::Label::new(None);
+    pub fn new(fmt: &str) -> BottomBar {
         let boxx = gtk::Box::new(gtk::Orientation::Horizontal, 5);
-        boxx.pack_start(&resolution, false, false, 0);
-        boxx.pack_start(&filename, false, false, 0);
-        boxx.pack_start(&zoom, true, false, 0);
-        boxx.pack_end(&image_index, true, false, 0);
+        let label = gtk::Label::new(None);
+        boxx.pack_start(&label, true, true, 0);
         boxx.set_valign(gtk::Align::End);
         boxx.set_halign(gtk::Align::End);
         BottomBar {
             boxx,
-            resolution,
-            filename,
-            zoom,
-            image_index,
+            label,
+            info: None,
+            formatter: PercentFormatter::new(fmt),
         }
     }
 
@@ -39,22 +58,48 @@ impl BottomBar {
         &self.boxx
     }
 
-    pub fn set_info(&self, filename: &str, dims: (i32, i32)) {
-        self.filename.set_text(&format!("| {}", filename));
-        self.resolution.set_text(&format!("{}x{}", dims.0, dims.1));
+    pub fn set_info(
+        &mut self,
+        filename: &str,
+        dims: (i32, i32),
+        file_size: usize,
+        zoom: Percent,
+        image_index: usize,
+        nimages: usize,
+    ) {
+        let actual_index = image_index + 1;
+        if let Some(ref mut info) = self.info {
+            info.filename.clear();
+            info.filename.push_str(filename);
+            info.dims = dims;
+            info.file_size = "".to_owned();
+            info.zoom = zoom;
+            info.image_index = actual_index;
+            info.nimages = nimages;
+        } else {
+            self.info = Some(ImageInfo {
+                filename: filename.to_owned(),
+                dims,
+                file_size: "".to_owned(),
+                zoom,
+                image_index: actual_index,
+                nimages,
+            });
+        }
+        self.render();
     }
 
-    pub fn set_zoom(&self, percent: Option<Percent>) {
-        match percent {
-            Some(percent) => self.zoom.set_text(&format!("| {}", percent)),
-            None => self.zoom.set_text(""),
+    #[inline]
+    fn render(&mut self) {
+        if let Some(ref info) = self.info {
+            self.label.set_text(self.formatter.format(info));
         }
     }
 
-    pub fn set_index(&self, index: Option<(usize, usize)>) {
-        match index {
-            Some((i, n)) => self.image_index.set_text(&format!("| {}/{}", i, n)),
-            None => self.image_index.set_text(""),
+    pub fn set_zoom(&mut self, percent: Percent) {
+        if let Some(ref mut info) = self.info {
+            info.zoom = percent;
         }
+        self.render();
     }
 }

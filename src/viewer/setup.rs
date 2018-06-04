@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use gdk_pixbuf::PixbufRotation;
 use gtk::prelude::*;
 
 use keys::{KeyAction, KeyMap, KeyPress};
@@ -14,6 +15,7 @@ impl Viewer {
             .win
             .connect_key_press_event(move |_, key_event| {
                 let scroll = |s| clone.borrow().img.scroll(s);
+                let rot = |r| clone.borrow_mut().rotate(r);
                 if let Some(action) = keymap.get(&KeyPress(key_event.get_keyval())) {
                     use self::KeyAction::*;
                     match *action {
@@ -37,6 +39,9 @@ impl Viewer {
                         ToggleStatus => clone.borrow_mut().toggle_status(),
                         JumpToStart => clone.borrow_mut().jump_to_start(),
                         JumpToEnd => clone.borrow_mut().jump_to_end(),
+                        RotateClockwise => rot(PixbufRotation::Clockwise),
+                        RotateCounterClockwise => rot(PixbufRotation::Counterclockwise),
+                        RotateUpsideDown => rot(PixbufRotation::Upsidedown),
                     };
                     Inhibit(true)
                 } else {
