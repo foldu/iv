@@ -187,7 +187,7 @@ impl ops::Sub for Percent {
 
 impl Serialize for Percent {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&format!("{}", self.0))
+        serializer.serialize_str(&format!("{}", self))
     }
 }
 

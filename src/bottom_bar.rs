@@ -3,10 +3,11 @@ use std::fmt::Write;
 use gtk;
 use gtk::prelude::*;
 
+use humane_bytes::HumaneBytes;
 use percent::Percent;
 use percent_formatter::{PercentFormatable, PercentFormatter};
 
-// FIXME: file_size is a stub
+#[derive(Debug, Clone)]
 struct ImageInfo {
     filename: String,
     image_index: usize,
@@ -72,7 +73,8 @@ impl BottomBar {
             info.filename.clear();
             info.filename.push_str(filename);
             info.dims = dims;
-            info.file_size = "".to_owned();
+            info.file_size.clear();
+            write!(info.file_size, "{}", HumaneBytes::from(file_size)).unwrap();
             info.zoom = zoom;
             info.image_index = actual_index;
             info.nimages = nimages;

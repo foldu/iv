@@ -26,6 +26,7 @@ lazy_static = "1.0.0"
 num = "0.1.42"
 indexmap = "1.0.1"
 noisy_float = "0.1.5"
+nom = "4.0.0"
 
 [profile.release]
 lto = true

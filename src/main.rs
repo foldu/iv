@@ -24,6 +24,8 @@ extern crate lazy_static;
 extern crate indexmap;
 extern crate noisy_float;
 extern crate num;
+#[macro_use]
+extern crate nom;
 
 use std::path::PathBuf;
 use std::process::exit;
@@ -36,7 +38,9 @@ mod bottom_bar;
 mod config;
 mod extract;
 mod find;
+mod humane_bytes;
 mod keys;
+mod parse;
 #[cfg_attr(feature = "cargo-clippy", allow(cast_lossless))]
 mod percent;
 mod percent_formatter;
