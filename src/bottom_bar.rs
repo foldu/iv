@@ -63,7 +63,7 @@ impl BottomBar {
         &mut self,
         filename: &str,
         dims: (i32, i32),
-        file_size: usize,
+        file_size: u64,
         zoom: Percent,
         image_index: usize,
         nimages: usize,
@@ -82,7 +82,7 @@ impl BottomBar {
             self.info = Some(ImageInfo {
                 filename: filename.to_owned(),
                 dims,
-                file_size: "".to_owned(),
+                file_size: format!("{}", HumaneBytes::from(file_size)),
                 zoom,
                 image_index: actual_index,
                 nimages,
@@ -101,7 +101,7 @@ impl BottomBar {
     pub fn set_zoom(&mut self, percent: Percent) {
         if let Some(ref mut info) = self.info {
             info.zoom = percent;
+            self.render();
         }
-        self.render();
     }
 }

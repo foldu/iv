@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fmt;
 use std::fs;
 use std::io;
@@ -13,6 +14,7 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 use toml;
 
+use humane_bytes::HumaneBytes;
 use keys::{KeyAction, KeyMap, KeyPress};
 use percent::Percent;
 use ratio::Ratio;
@@ -42,10 +44,17 @@ fn def_geom() -> WinGeom {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+pub struct MaxFileSize {
+    pub zip: HumaneBytes,
+    pub img: HumaneBytes,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub bottom_format: String,
     pub scrollbars: bool,
+    pub max_file_size: MaxFileSize,
     #[serde(with = "InterpTypeDef")]
     pub scaling_algo: InterpType,
     #[serde(default = "def_geom")]
@@ -109,8 +118,12 @@ macro_rules! keymap {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            bottom_format: "%d | %f | %z | %i/%n".to_owned(),
+            bottom_format: "%d | %f | %s | %z | %i/%n".to_owned(),
             scrollbars: false,
+            max_file_size: MaxFileSize {
+                img: HumaneBytes::try_from("25MB").unwrap(),
+                zip: HumaneBytes::try_from("256MB").unwrap(),
+            },
             keymap: keymap! {
                 "q" => Quit,
                 "n" => Next,

@@ -2,8 +2,6 @@ use failure;
 use magic::{flags, Cookie, CookieFlags};
 use mime::Mime;
 
-use std::path::Path;
-
 thread_local! {
     static COOKIE: Cookie = {
         let mut cflags = CookieFlags::default();
@@ -26,8 +24,12 @@ thread_local! {
     }
 }
 
-pub fn mime_type_file<P: AsRef<Path>>(path: P) -> Result<Mime, failure::Error> {
-    COOKIE.with(move |cookie| Ok(cookie.file(path)?.as_str().parse()?))
+//pub fn mime_type_file<P: AsRef<Path>>(path: P) -> Result<Mime, failure::Error> {
+//    COOKIE.with(move |cookie| Ok(cookie.file(path)?.as_str().parse()?))
+//}
+
+pub fn mime_type_buf(buf: &[u8]) -> Result<Mime, failure::Error> {
+    COOKIE.with(move |cookie| Ok(cookie.buffer(buf)?.as_str().parse()?))
 }
 
 lazy_static! {

@@ -7,7 +7,7 @@ named!(
 );
 
 named!(
-    human_bytes(CompleteStr) -> usize,
+    human_bytes(CompleteStr) -> u64,
     do_parse!(
         ret: p_f64 >>
         prefix: opt!(one_of!("kmgtKMGT")) >>
@@ -21,12 +21,12 @@ named!(
                 't' | 'T' => 1_000_000_000_000_u64,
                 _ => unreachable!(),
             };
-            (ret * multiplier as f64) as usize
-        }).unwrap_or(ret as usize))
+            (ret * multiplier as f64) as u64
+        }).unwrap_or(ret as u64))
     )
 );
 
-pub fn parse_human_readable_bytes<'a>(s: &'a str) -> Result<usize, failure::Error> {
+pub fn parse_human_readable_bytes<'a>(s: &'a str) -> Result<u64, failure::Error> {
     let (_, ret) = human_bytes(CompleteStr(&s))
         .map_err(|e| format_err!("Can't parse as human readable bytes: {}", e))?;
     Ok(ret)

@@ -3,19 +3,34 @@ use std::fmt;
 
 use failure;
 use num;
+use serde::de::{self, Deserializer, Visitor};
+use serde::ser::Serializer;
+use serde::{Deserialize, Serialize};
 
 use parse::parse_human_readable_bytes;
 
 #[derive(Debug, Clone, Copy)]
-pub struct HumaneBytes(usize);
+pub struct HumaneBytes(u64);
 
 impl From<usize> for HumaneBytes {
     fn from(other: usize) -> Self {
-        Self { 0: other }
+        Self { 0: other as u64 }
     }
 }
 
 impl From<HumaneBytes> for usize {
+    fn from(other: HumaneBytes) -> Self {
+        other.0 as usize
+    }
+}
+
+impl From<u64> for HumaneBytes {
+    fn from(other: u64) -> Self {
+        Self { 0: other }
+    }
+}
+
+impl From<HumaneBytes> for u64 {
     fn from(other: HumaneBytes) -> Self {
         other.0
     }
@@ -45,6 +60,36 @@ impl fmt::Display for HumaneBytes {
                 suff_tbl[i]
             )
         }
+    }
+}
+
+impl<'de> Deserialize<'de> for HumaneBytes {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct HumaneBytesVisitor;
+
+        impl<'de> Visitor<'de> for HumaneBytesVisitor {
+            type Value = HumaneBytes;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a human readable si number of bytes")
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+                HumaneBytes::try_from(value)
+                    .map_err(|e| E::custom(&format!("Can't parse as readable si bytes: {}", e)))
+            }
+        }
+
+        deserializer.deserialize_str(HumaneBytesVisitor)
+    }
+}
+
+impl Serialize for HumaneBytes {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("{}", self))
     }
 }
 

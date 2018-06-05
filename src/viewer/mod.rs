@@ -1,26 +1,21 @@
+mod load;
 mod setup;
 
 use std::cell::RefCell;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use failure;
-use gdk_pixbuf::{
-    InterpType, Pixbuf, PixbufAnimation, PixbufAnimationExt, PixbufExt, PixbufRotation,
-};
+use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimationExt, PixbufExt, PixbufRotation};
 use gtk;
 use gtk::prelude::*;
-use mime;
 use tempfile::TempDir;
 
 use bottom_bar::BottomBar;
-use config::{Config, WinGeom};
-use extract::tmp_extract_zip;
-use find;
+use config::{Config, MaxFileSize, WinGeom};
 use percent::Percent;
 use ratio::*;
 use scrollable_image::ScrollableImage;
-use util;
 
 pub struct Viewer {
     win: gtk::Window,
@@ -35,77 +30,13 @@ pub struct Viewer {
     tempdirs: Vec<TempDir>,
     scaling_algo: InterpType,
     initial_geom: WinGeom,
+    max_file_size: MaxFileSize,
 }
 
 #[derive(Debug, Clone, Copy)]
 enum Zoom {
     In,
     Out,
-}
-
-enum ImageKind {
-    Animated(PixbufAnimation),
-    Normal(Pixbuf),
-}
-
-fn load_image<P: AsRef<Path>>(
-    path: P,
-    ftype: FileType,
-) -> Result<(String, ImageKind), failure::Error> {
-    let path = path.as_ref();
-    let path_str = if let Some(path) = path.to_str() {
-        path
-    } else {
-        return Err(format_err!(
-            "Can't decode path {:?} as UTF-8 and gtk doesn't support non UTF-8 paths",
-            path
-        ));
-    };
-
-    let ret = match ftype {
-        FileType::AnimatedImage => ImageKind::Animated(PixbufAnimation::new_from_file(&path_str)?),
-        FileType::Image => ImageKind::Normal(Pixbuf::new_from_file(&path_str)?),
-        FileType::Video => {
-            return Err(format_err!(
-                "Can't open {}: Support for videos currently not implemented",
-                path_str
-            ))
-        }
-        _ => unreachable!(),
-    };
-
-    let filename = path.file_name().unwrap().to_str().unwrap().to_owned();
-
-    Ok((filename, ret))
-}
-
-fn guess_file_type<P: AsRef<Path>>(path: P) -> Result<FileType, failure::Error> {
-    let path = path.as_ref();
-    let mime = util::mime_type_file(path)
-        .map_err(|e| format_err!("Can't get mime type of {:?}: {}", path, e))?;
-    if mime == mime::IMAGE_GIF {
-        Ok(FileType::AnimatedImage)
-    } else if mime.type_() == mime::IMAGE {
-        Ok(FileType::Image)
-    } else if mime.type_() == mime::VIDEO {
-        Ok(FileType::Video)
-    } else if mime == *util::APPLICATION_ZIP {
-        Ok(FileType::Zip)
-    } else {
-        Err(format_err!(
-            "Can't open file {:?}: Unsupported mime type: {}",
-            path,
-            mime
-        ))
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-enum FileType {
-    Video,
-    AnimatedImage,
-    Image,
-    Zip,
 }
 
 impl Viewer {
@@ -148,6 +79,7 @@ impl Viewer {
             tempdirs: Vec::new(),
             scaling_algo: config.scaling_algo,
             initial_geom: config.initial_geom,
+            max_file_size: config.max_file_size,
         }));
 
         Viewer::setup(config.keymap, &ret);
@@ -174,36 +106,61 @@ impl Viewer {
     }
 
     fn show_current(&mut self) -> Result<(), failure::Error> {
-        let mut inner = || {
-            let file_type = guess_file_type(&self.image_paths[self.index])?;
-            match file_type {
-                FileType::Zip => {
-                    let extracted = tmp_extract_zip(&self.image_paths[self.index])?;
-                    let path = extracted.path().to_owned();
-                    self.tempdirs.push(extracted);
-
-                    let new = find::find_files_rec(path);
-                    let mut rest = self.image_paths.split_off(self.index);
-                    let len = rest.len();
-                    self.image_paths.extend(new);
-                    if len > 0 {
-                        rest.remove(0);
-                        self.image_paths.append(&mut rest);
-                    }
-
-                    self.show_current()
-                }
-                FileType::Image | FileType::AnimatedImage | FileType::Video => {
-                    self.show_image(file_type)
-                }
+        let ret = match load::load_file(&self.image_paths[self.index], &self.max_file_size) {
+            Ok(ret) => ret,
+            Err(e) => {
+                eprintln!("{}", e);
+                return Err(e.into());
             }
         };
 
-        match inner() {
-            Ok(()) => Ok(()),
-            Err(e) => {
-                eprintln!("{}", e);
-                Err(e)
+        use viewer::load::Loaded::*;
+        match ret {
+            Zip { files, tmp_dir } => {
+                self.tempdirs.push(tmp_dir);
+                let mut rest = self.image_paths.split_off(self.index);
+                let len = rest.len();
+                self.image_paths.extend(files);
+                if len > 0 {
+                    rest.remove(0);
+                    self.image_paths.append(&mut rest);
+                }
+
+                self.show_current()
+            }
+            some_image => {
+                let filename = self.image_paths[self.index].file_name().unwrap().to_owned();
+
+                let filename = filename.to_string_lossy();
+
+                self.win.set_title(&format!("iv - {}", &filename));
+
+                let (file_size, dims) = match some_image {
+                    AnimatedImage((file_size, anim)) => {
+                        self.img.set_from_animation(&anim);
+                        self.cur_original_pixbuf = None;
+                        (file_size, (anim.get_width(), anim.get_height()))
+                    }
+                    Image((file_size, img)) => {
+                        self.img.set_from_pixbuf(&img);
+                        let dims = (img.get_width(), img.get_height());
+                        self.cur_original_pixbuf = Some(img);
+                        (file_size, dims)
+                    }
+                    _ => unreachable!(),
+                };
+
+                self.scale_to_fit_current();
+
+                self.bottom.set_info(
+                    &filename,
+                    dims,
+                    file_size,
+                    self.cur_zoom_level,
+                    self.index,
+                    self.image_paths.len(),
+                );
+                Ok(())
             }
         }
     }
@@ -229,44 +186,6 @@ impl Viewer {
                     self.index -= 1;
                     self.prev();
                 }
-            }
-        }
-    }
-
-    fn show_image(&mut self, ftype: FileType) -> Result<(), failure::Error> {
-        match load_image(&self.image_paths[self.index], ftype) {
-            Ok((filename, pixbuf)) => {
-                self.win.set_title(&format!("iv - {}", &filename));
-
-                let dims = match pixbuf {
-                    ImageKind::Animated(anim) => {
-                        self.img.set_from_animation(&anim);
-                        self.cur_original_pixbuf = None;
-                        (anim.get_width(), anim.get_height())
-                    }
-                    ImageKind::Normal(img) => {
-                        self.img.set_from_pixbuf(&img);
-                        let dims = (img.get_width(), img.get_height());
-                        self.cur_original_pixbuf = Some(img);
-                        dims
-                    }
-                };
-
-                self.scale_to_fit_current();
-
-                self.bottom.set_info(
-                    &filename,
-                    dims,
-                    0,
-                    self.cur_zoom_level,
-                    self.index,
-                    self.image_paths.len(),
-                );
-                Ok(())
-            }
-            Err(e) => {
-                self.cur_original_pixbuf = None;
-                Err(e)
             }
         }
     }
