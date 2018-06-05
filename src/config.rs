@@ -3,6 +3,7 @@ use std::convert::TryFrom;
 use std::fmt;
 use std::fs;
 use std::io;
+use std::path::PathBuf;
 
 use directories::BaseDirs;
 use failure;
@@ -54,9 +55,9 @@ pub struct MaxFileSize {
 pub struct Config {
     pub bottom_format: String,
     pub scrollbars: bool,
-    pub max_file_size: MaxFileSize,
     #[serde(with = "InterpTypeDef")]
     pub scaling_algo: InterpType,
+    pub max_file_size: MaxFileSize,
     #[serde(default = "def_geom")]
     pub initial_geom: WinGeom,
     pub keymap: KeyMap,
@@ -155,22 +156,29 @@ impl Default for Config {
     }
 }
 
+lazy_static! {
+    static ref CONFIG_PATH: PathBuf = BaseDirs::new().config_dir().join("iv.toml");
+}
+
 pub fn load() -> Result<Config, failure::Error> {
-    let path = BaseDirs::new().config_dir().join("iv.toml");
-    match fs::read_to_string(&path) {
+    match fs::read_to_string(CONFIG_PATH.as_path()) {
         Ok(cont) => Ok(toml::from_str(&cont)?),
         Err(e) => {
             if e.kind() == io::ErrorKind::NotFound {
-                let ret = Config::default();
-                fs::write(
-                    &path,
-                    toml::to_string_pretty(&ret).expect("Can't deserialize default config"),
-                )?;
-                eprintln!("Default config written to {:?}", path);
-                Ok(ret)
+                write_default()
             } else {
                 Err(format_err!("Can't read config: {}", e))
             }
         }
     }
+}
+
+pub fn write_default() -> Result<Config, failure::Error> {
+    let ret = Config::default();
+    fs::write(
+        CONFIG_PATH.as_path(),
+        toml::to_string_pretty(&ret).expect("Can't deserialize default config"),
+    ).map_err(|e| format_err!("Can't write default config: {}", e))?;
+    eprintln!("Default config written to {:?}", CONFIG_PATH.as_path());
+    Ok(ret)
 }

@@ -52,8 +52,15 @@ mod viewer;
 use viewer::Viewer;
 
 fn run() -> Result<(), failure::Error> {
-    let opt = Opt::from_args();
     gtk::init().map_err(|e| format_err!("Can't init gtk: {}", e))?;
+
+    let opt = Opt::from_args();
+
+    if opt.write_default {
+        config::write_default()?;
+        return Ok(());
+    }
+
     match config::load() {
         Err(e) => {
             let nice_err = format!("Can't parse config: {}", e);
@@ -94,6 +101,7 @@ fn opt_to_viewer_params(
         hide_status,
         recursive,
         paths,
+        ..
     }: Opt,
 ) -> Result<(Vec<PathBuf>, bool), failure::Error> {
     if recursive {
@@ -132,6 +140,9 @@ struct Opt {
     #[structopt(short = "r", long = "recursive")]
     /// Recurse into directories
     recursive: bool,
+    #[structopt(long = "write-default")]
+    /// Just write the default config, clobbering the old one
+    write_default: bool,
 }
 
 fn main() {
