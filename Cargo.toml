@@ -20,7 +20,7 @@ serde_derive = "1.0.37"
 serde = "1.0.37"
 toml = "0.4.6"
 directories = "0.10.0"
-zip = { version = "0.4.0", default-features = false }
+zip = { version = "0.4.0", features = ["deflate"], default-features = false }
 tempfile = "3.0.1"
 lazy_static = "1.0.0"
 num = "0.1.42"
