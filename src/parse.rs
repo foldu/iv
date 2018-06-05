@@ -32,6 +32,20 @@ pub fn parse_human_readable_bytes<'a>(s: &'a str) -> Result<usize, failure::Erro
     Ok(ret)
 }
 
+named!(
+    percent(CompleteStr) -> f64,
+    do_parse!(
+        ret: p_f64 >>
+        char!('%') >>
+        eof!() >>
+        (ret)
+    )
+);
+
+pub fn parse_percent(s: &str) -> Option<f64> {
+    percent(CompleteStr(&s)).ok().map(|(_, ret)| ret)
+}
+
 #[test]
 fn parse_bytes() {
     assert!(parse_human_readable_bytes("test").is_err());
@@ -39,4 +53,14 @@ fn parse_bytes() {
     assert!(parse_human_readable_bytes("1000b").is_ok());
     assert!(parse_human_readable_bytes("1000kb").is_ok());
     assert!(parse_human_readable_bytes("1000tB").is_ok());
+}
+
+#[test]
+fn parse_percent_f64() {
+    assert!(parse_percent("20%").is_some());
+    assert!(parse_percent("20").is_none());
+    assert!(parse_percent("20% ").is_none());
+    assert!(parse_percent("test").is_none());
+    assert!(parse_percent("%").is_none());
+    assert!(parse_percent("").is_none());
 }

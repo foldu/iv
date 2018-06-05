@@ -5,6 +5,8 @@ use std::ops;
 use noisy_float::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
+use parse::parse_percent;
+
 /// A percent value. The percentage is never negative or invalid. Subtracting percentages is
 /// bottomed out at 0
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Debug)]
@@ -121,16 +123,7 @@ derive_float_try_from!(f64);
 impl<'a> TryFrom<&'a str> for Percent {
     type Error = PercentError;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let inner = || {
-            let end = s.find('%')?;
-            if end == s.len() - 1 {
-                s[..end].parse::<f64>().ok()
-            } else {
-                None
-            }
-        };
-
-        inner()
+        parse_percent(s)
             .and_then(|n| Percent::try_from(n / 100.).ok())
             .ok_or_else(|| PercentError::Parse(s.to_owned()))
     }
@@ -231,17 +224,6 @@ fn percent_try_from() {
 }
 
 #[test]
-fn percent_parse() {
-    assert!(Percent::try_from("20%").is_ok());
-    assert!(Percent::try_from("20").is_err());
-    assert!(Percent::try_from("20% ").is_err());
-    assert!(Percent::try_from("-20%").is_err());
-    assert!(Percent::try_from("test").is_err());
-    assert!(Percent::try_from("%").is_err());
-    assert!(Percent::try_from("").is_err());
-}
-
-#[test]
 fn percent_math() {
     assert_eq!(
         Percent::from(50_u32) + Percent::from(50_u32),
@@ -264,4 +246,9 @@ fn percent_step() {
         Percent::from(28_u32).step_prev(Percent::from(25_u32), Percent::from(25_u32)),
         Percent::from(25_u32)
     );
+}
+
+#[test]
+fn parse_percent_logic() {
+    assert!(Percent::try_from("-20%").is_err())
 }
