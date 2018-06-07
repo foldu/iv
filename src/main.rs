@@ -52,9 +52,9 @@ mod viewer;
 use viewer::Viewer;
 
 fn run() -> Result<(), failure::Error> {
-    gtk::init().map_err(|e| format_err!("Can't init gtk: {}", e))?;
-
     let opt = Opt::from_args();
+
+    gtk::init().map_err(|e| format_err!("Can't init gtk: {}", e))?;
 
     if opt.write_default {
         config::write_default()?;

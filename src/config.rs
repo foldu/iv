@@ -74,10 +74,8 @@ impl Serialize for KeyPress {
     where
         S: Serializer,
     {
-        serializer.serialize_str(
-            &gtk::accelerator_name(self.0, ModifierType::empty())
-                .expect("Tried to serialize invalid key combination"),
-        )
+        serializer.serialize_str(&gtk::accelerator_name(self.0, ModifierType::empty())
+            .expect("Tried to serialize invalid key combination"))
     }
 }
 
