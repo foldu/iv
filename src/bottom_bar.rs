@@ -1,11 +1,11 @@
-use std::fmt::Write;
+use std::fmt::{self, Write};
 
 use gtk;
 use gtk::prelude::*;
 
 use humane_bytes::HumaneBytes;
 use percent::Percent;
-use percent_formatter::{PercentFormatable, PercentFormatter};
+use percent_formatter::{PercentFormatBuf, PercentFormatable};
 
 #[derive(Debug, Clone)]
 struct ImageInfo {
@@ -17,19 +17,22 @@ struct ImageInfo {
     zoom: Percent,
 }
 
-impl PercentFormatable for ImageInfo {
-    fn try_parse(&self, rest: &str, buf: &mut String) -> Option<usize> {
-        match rest.chars().next()? {
-            'f' => buf.push_str(&self.filename),
-            'd' => write!(buf, "{}x{}", self.dims.0, self.dims.1).unwrap(),
-            'i' => write!(buf, "{}", self.image_index).unwrap(),
-            'n' => write!(buf, "{}", self.nimages).unwrap(),
-            's' => buf.push_str(&self.file_size),
-            'z' => write!(buf, "{}", self.zoom).unwrap(),
-            _ => return None,
+impl<W> PercentFormatable<W> for ImageInfo
+where
+    W: fmt::Write,
+{
+    fn try_parse(&self, rest: &str, w: &mut W) -> Result<Option<usize>, fmt::Error> {
+        match rest.chars().next() {
+            Some('f') => write!(w, "{}", self.filename)?,
+            Some('d') => write!(w, "{}x{}", self.dims.0, self.dims.1)?,
+            Some('i') => write!(w, "{}", self.image_index)?,
+            Some('n') => write!(w, "{}", self.nimages)?,
+            Some('s') => write!(w, "{}", self.file_size)?,
+            Some('z') => write!(w, "{}", self.zoom)?,
+            _ => return Ok(None),
         }
 
-        Some(0)
+        Ok(Some(0))
     }
 }
 
@@ -37,7 +40,7 @@ pub struct BottomBar {
     boxx: gtk::Box,
     label: gtk::Label,
     info: Option<ImageInfo>,
-    formatter: PercentFormatter,
+    formatter: PercentFormatBuf,
 }
 
 impl BottomBar {
@@ -51,7 +54,7 @@ impl BottomBar {
             boxx,
             label,
             info: None,
-            formatter: PercentFormatter::new(fmt),
+            formatter: PercentFormatBuf::new(fmt),
         }
     }
 
