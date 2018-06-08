@@ -104,23 +104,36 @@ where
     }
 }
 
+pub enum ImageKind {
+    Image(Pixbuf),
+    Animated(PixbufAnimation),
+}
+
 pub enum Loaded {
     Zip {
         files: Vec<PathBuf>,
         tmp_dir: TempDir,
     },
-    Image((FileSize, Pixbuf)),
-    AnimatedImage((FileSize, PixbufAnimation)),
+    Image {
+        size: FileSize,
+        img: ImageKind,
+    },
 }
 
 fn handle_gif(mut ctx: LoaderCtx) -> Result<Loaded> {
     ctx.load_pixbuf_with(|loader| loader.get_animation().unwrap())
-        .map(Loaded::AnimatedImage)
+        .map(|img| Loaded::Image {
+            size: ctx.file_size,
+            img: ImageKind::Animated(img),
+        })
 }
 
 fn handle_img(mut ctx: LoaderCtx) -> Result<Loaded> {
     ctx.load_pixbuf_with(|loader| loader.get_pixbuf().unwrap())
-        .map(Loaded::Image)
+        .map(|img| Loaded::Image {
+            size: ctx.file_size,
+            img: ImageKind::Image(img),
+        })
 }
 
 fn handle_zip(ctx: &LoaderCtx) -> Result<Loaded> {
@@ -140,7 +153,7 @@ struct LoaderCtx<'a> {
 }
 
 impl<'a> LoaderCtx<'a> {
-    fn load_pixbuf_with<F, T>(&mut self, f: F) -> Result<(FileSize, T)>
+    fn load_pixbuf_with<F, T>(&mut self, f: F) -> Result<T>
     where
         F: FnOnce(PixbufLoader) -> T,
     {
@@ -150,7 +163,7 @@ impl<'a> LoaderCtx<'a> {
         let loader = PixbufLoader::new();
         loader.write(&buf).map_err(Error::GdkPixBuf)?;
         loader.close().map_err(Error::GdkPixBuf)?;
-        Ok((self.file_size, f(loader)))
+        Ok(f(loader))
     }
 }
 

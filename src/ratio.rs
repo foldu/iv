@@ -16,8 +16,8 @@ pub struct Ratio(f64, f64);
 impl<'a> TryFrom<&'a str> for Ratio {
     type Error = &'static str;
     fn try_from(s: &str) -> Result<Self, Self::Error> {
-        let mut it = s.splitn(2, 'x');
-        let mut inner = || {
+        (|| {
+            let mut it = s.splitn(2, 'x');
             let parse = |x: &mut Iterator<Item = &str>| x.next().and_then(|x| x.parse().ok());
             let (a, b) = (parse(&mut it)?, parse(&mut it)?);
             if it.next().is_some() {
@@ -25,9 +25,7 @@ impl<'a> TryFrom<&'a str> for Ratio {
             } else {
                 Some(Ratio(a, b))
             }
-        };
-
-        inner().ok_or("Expecting f64xf64")
+        })().ok_or("Expecting f64xf64")
     }
 }
 

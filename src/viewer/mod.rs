@@ -114,6 +114,7 @@ impl Viewer {
             }
         };
 
+        use viewer::load::ImageKind;
         use viewer::load::Loaded::*;
         match ret {
             Zip { files, tmp_dir } => {
@@ -128,26 +129,23 @@ impl Viewer {
 
                 self.show_current()
             }
-            some_image => {
+            Image { size, img } => {
                 let filename = self.image_paths[self.index].file_name().unwrap().to_owned();
 
                 let filename = filename.to_string_lossy();
-
                 self.win.set_title(&format!("iv - {}", &filename));
-
-                let (file_size, dims) = match some_image {
-                    AnimatedImage((file_size, anim)) => {
+                let dims = match img {
+                    ImageKind::Animated(anim) => {
                         self.img.set_from_animation(&anim);
                         self.cur_original_pixbuf = None;
-                        (file_size, (anim.get_width(), anim.get_height()))
+                        (anim.get_width(), anim.get_height())
                     }
-                    Image((file_size, img)) => {
+                    ImageKind::Image(img) => {
                         self.img.set_from_pixbuf(&img);
                         let dims = (img.get_width(), img.get_height());
                         self.cur_original_pixbuf = Some(img);
-                        (file_size, dims)
+                        dims
                     }
-                    _ => unreachable!(),
                 };
 
                 self.scale_to_fit_current();
@@ -155,7 +153,7 @@ impl Viewer {
                 self.bottom.set_info(
                     &filename,
                     dims,
-                    file_size,
+                    size,
                     self.cur_zoom_level,
                     self.index,
                     self.image_paths.len(),
