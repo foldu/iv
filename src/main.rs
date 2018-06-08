@@ -1,4 +1,4 @@
-#![feature(try_from, bufreader_buffer, nll)]
+#![feature(try_from, nll)]
 #[macro_use]
 extern crate failure;
 extern crate gdk;

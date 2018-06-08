@@ -65,9 +65,7 @@ where
     // do not forget to consume nbytes
     let file_type = {
         let initial_buf = do_io(path, || fh.fill_buf())?;
-        let file_type = guess_file_type(&path, &initial_buf)?;
-
-        file_type
+        guess_file_type(&path, &initial_buf)?
     };
 
     let ctx = LoaderCtx {
@@ -84,12 +82,10 @@ where
                     type_: file_type,
                     size: max_file_size.img,
                 })
+            } else if let FileType::AnimatedImage = file_type {
+                handle_gif(ctx)
             } else {
-                if let FileType::Image = file_type {
-                    handle_img(ctx)
-                } else {
-                    handle_gif(ctx)
-                }
+                handle_img(ctx)
             }
         }
         FileType::Zip => {
@@ -100,7 +96,7 @@ where
                     size: max_file_size.zip,
                 })
             } else {
-                handle_zip(ctx)
+                handle_zip(&ctx)
             }
         }
 
@@ -127,7 +123,7 @@ fn handle_img(mut ctx: LoaderCtx) -> Result<Loaded> {
         .map(Loaded::Image)
 }
 
-fn handle_zip(ctx: LoaderCtx) -> Result<Loaded> {
+fn handle_zip(ctx: &LoaderCtx) -> Result<Loaded> {
     let extracted = tmp_extract_zip(ctx.path).map_err(|e| Error::Unzip(ctx.path.to_owned(), e))?;
     let files = find::find_files_rec(extracted.path()).collect();
     Ok(Loaded::Zip {

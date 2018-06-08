@@ -31,13 +31,11 @@ where
             State::GotPercent => {
                 if ch == '%' {
                     State::Normal
+                } else if let Some(skippie) = p.try_parse(&fmt[i..], &mut w)? {
+                    last = i + skippie + 1;
+                    State::Skip(skippie)
                 } else {
-                    if let Some(skippie) = p.try_parse(&fmt[i..], &mut w)? {
-                        last = i + skippie + 1;
-                        State::Skip(skippie)
-                    } else {
-                        State::Normal
-                    }
+                    State::Normal
                 }
             }
             State::Skip(0) => State::Normal,

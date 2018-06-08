@@ -26,7 +26,7 @@ named!(
     )
 );
 
-pub fn parse_human_readable_bytes<'a>(s: &'a str) -> Result<u64, failure::Error> {
+pub fn parse_human_readable_bytes(s: &str) -> Result<u64, failure::Error> {
     let (_, ret) = human_bytes(CompleteStr(&s))
         .map_err(|e| format_err!("Can't parse as human readable bytes: {}", e))?;
     Ok(ret)
