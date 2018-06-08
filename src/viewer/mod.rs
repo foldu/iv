@@ -1,6 +1,8 @@
 mod load;
 mod setup;
 
+use self::load::load_file;
+
 use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -106,26 +108,20 @@ impl Viewer {
     }
 
     fn show_current(&mut self) -> Result<(), failure::Error> {
-        let ret = match load::load_file(&self.image_paths[self.index], &self.max_file_size) {
-            Ok(ret) => ret,
-            Err(e) => {
-                eprintln!("{}", e);
-                return Err(e.into());
-            }
-        };
-
+        let ret = load_file(&self.image_paths[self.index], &self.max_file_size).map_err(|e| {
+            eprintln!("{}", e);
+            e
+        })?;
         use viewer::load::ImageKind;
         use viewer::load::Loaded::*;
+
         match ret {
             Zip { files, tmp_dir } => {
                 self.tempdirs.push(tmp_dir);
-                let mut rest = self.image_paths.split_off(self.index);
-                let len = rest.len();
+                self.image_paths.reserve(files.len());
+                let rest = self.image_paths.split_off(self.index);
                 self.image_paths.extend(files);
-                if len > 0 {
-                    rest.remove(0);
-                    self.image_paths.append(&mut rest);
-                }
+                self.image_paths.extend(rest.into_iter().skip(1));
 
                 self.show_current()
             }
