@@ -74,8 +74,10 @@ impl Serialize for KeyPress {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&gtk::accelerator_name(self.0, ModifierType::empty())
-            .expect("Tried to serialize invalid key combination"))
+        serializer.serialize_str(
+            &gtk::accelerator_name(self.0, ModifierType::empty())
+                .expect("Tried to serialize invalid key combination"),
+        )
     }
 }
 
@@ -179,4 +181,11 @@ pub fn write_default() -> Result<Config, failure::Error> {
     ).map_err(|e| format_err!("Can't write default config: {}", e))?;
     eprintln!("Default config written to {:?}", CONFIG_PATH.as_path());
     Ok(ret)
+}
+
+// FIXME: is it ok to use gtk::init() in tests?
+#[test]
+fn default_config_deserializeable() {
+    gtk::init().unwrap();
+    assert!(toml::to_string_pretty(&Config::default()).is_ok());
 }
