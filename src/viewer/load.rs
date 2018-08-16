@@ -19,7 +19,10 @@ type FileSize = u64;
 #[derive(Fail, Debug)]
 pub enum Error {
     #[fail(
-        display = "Can't open {:?}: Cowardly refusing open {} bigger than {}", path, type_, size
+        display = "Can't open {:?}: Cowardly refusing open {} bigger than {}",
+        path,
+        type_,
+        size
     )]
     FileTooBig {
         path: PathBuf,
