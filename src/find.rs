@@ -19,8 +19,7 @@ pub fn find_files<P: AsRef<Path>>(root: P) -> Result<impl Iterator<Item = PathBu
             .filter_map(|entry| {
                 let entry = entry.ok()?;
                 Some((entry.file_type().ok()?, entry))
-            })
-            .filter(|(t, _)| t.is_file())
+            }).filter(|(t, _)| t.is_file())
             .map(|(_, entry)| entry.path())
     })
 }
