@@ -1,6 +1,4 @@
-use std::convert::TryFrom;
-use std::fmt;
-use std::ops;
+use std::{convert::TryFrom, fmt, ops};
 
 use gdk::ScreenExt;
 use gtk::{self, prelude::*};
@@ -18,7 +16,7 @@ impl<'a> TryFrom<&'a str> for Ratio {
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         (|| {
             let mut it = s.splitn(2, 'x');
-            let parse = |x: &mut Iterator<Item = &str>| x.next().and_then(|x| x.parse().ok());
+            let parse = |x: &mut dyn Iterator<Item = &str>| x.next().and_then(|x| x.parse().ok());
             let (a, b) = (parse(&mut it)?, parse(&mut it)?);
             if it.next().is_some() {
                 None
@@ -42,7 +40,7 @@ impl<'de> Deserialize<'de> for Ratio {
         struct RatioVisitor;
         impl<'de> de::Visitor<'de> for RatioVisitor {
             type Value = Ratio;
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("a ratio")
             }
 

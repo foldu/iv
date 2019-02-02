@@ -1,28 +1,30 @@
-use failure;
-use nom::{recognize_float, types::CompleteStr};
+use failure::format_err;
+use nom::{types::CompleteStr, *};
 
 named!(
-    p_f64(CompleteStr) -> f64,
+    p_f64(CompleteStr<'_>) -> f64,
     flat_map!(call!(recognize_float), parse_to!(f64))
 );
 
 named!(
-    human_bytes(CompleteStr) -> u64,
+    human_bytes(CompleteStr<'_>) -> u64,
     do_parse!(
-        ret: p_f64 >>
-        prefix: opt!(one_of!("kmgtKMGT")) >>
-        one_of!("Bb") >>
-        eof!() >>
-        (prefix.map(|p| {
-            let multiplier = match p {
-                'k' | 'K' => 1_000,
-                'm' | 'M' => 1_000_000,
-                'g' | 'G' => 1_000_000_000,
-                't' | 'T' => 1_000_000_000_000_u64,
-                _ => unreachable!(),
-            };
-            (ret * multiplier as f64) as u64
-        }).unwrap_or(ret as u64))
+        ret: p_f64
+            >> prefix: opt!(one_of!("kmgtKMGT"))
+            >> one_of!("Bb")
+            >> eof!()
+            >> (prefix
+                .map(|p| {
+                    let multiplier = match p {
+                        'k' | 'K' => 1_000,
+                        'm' | 'M' => 1_000_000,
+                        'g' | 'G' => 1_000_000_000,
+                        't' | 'T' => 1_000_000_000_000_u64,
+                        _ => unreachable!(),
+                    };
+                    (ret * multiplier as f64) as u64
+                })
+                .unwrap_or(ret as u64))
     )
 );
 
@@ -33,13 +35,8 @@ pub fn parse_human_readable_bytes(s: &str) -> Result<u64, failure::Error> {
 }
 
 named!(
-    percent(CompleteStr) -> f64,
-    do_parse!(
-        ret: p_f64 >>
-        char!('%') >>
-        eof!() >>
-        (ret)
-    )
+    percent(CompleteStr<'_>) -> f64,
+    do_parse!(ret: p_f64 >> char!('%') >> eof!() >> (ret))
 );
 
 pub fn parse_percent(s: &str) -> Option<f64> {

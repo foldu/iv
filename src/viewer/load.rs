@@ -1,17 +1,22 @@
-use std::fmt;
-use std::fs::File;
-use std::io::{self, prelude::*, BufReader};
-use std::path::{Path, PathBuf};
+use std::{
+    fmt,
+    fs::File,
+    io::{self, prelude::*, BufReader},
+    path::{Path, PathBuf},
+};
 
+use failure::Fail;
 use gdk_pixbuf::{self, prelude::*, Pixbuf, PixbufAnimation, PixbufLoader};
 use mime;
 use tempfile::TempDir;
 
-use crate::config::MaxFileSize;
-use crate::extract::{tmp_extract_zip, ZipError};
-use crate::find;
-use crate::humane_bytes::HumaneBytes;
-use crate::util::{self, mime_type_buf};
+use crate::{
+    config::MaxFileSize,
+    extract::{tmp_extract_zip, ZipError},
+    find,
+    humane_bytes::HumaneBytes,
+    util::{self, mime_type_buf},
+};
 
 type Result<T> = ::std::result::Result<T, Error>;
 type FileSize = u64;
@@ -121,7 +126,7 @@ pub enum Loaded {
     },
 }
 
-fn handle_gif(mut ctx: LoaderCtx) -> Result<Loaded> {
+fn handle_gif(mut ctx: LoaderCtx<'_>) -> Result<Loaded> {
     ctx.load_pixbuf_with(|loader| loader.get_animation().unwrap())
         .map(|img| Loaded::Image {
             size: ctx.file_size,
@@ -129,7 +134,7 @@ fn handle_gif(mut ctx: LoaderCtx) -> Result<Loaded> {
         })
 }
 
-fn handle_img(mut ctx: LoaderCtx) -> Result<Loaded> {
+fn handle_img(mut ctx: LoaderCtx<'_>) -> Result<Loaded> {
     ctx.load_pixbuf_with(|loader| loader.get_pixbuf().unwrap())
         .map(|img| Loaded::Image {
             size: ctx.file_size,
@@ -137,7 +142,7 @@ fn handle_img(mut ctx: LoaderCtx) -> Result<Loaded> {
         })
 }
 
-fn handle_zip(ctx: &LoaderCtx) -> Result<Loaded> {
+fn handle_zip(ctx: &LoaderCtx<'_>) -> Result<Loaded> {
     let extracted = tmp_extract_zip(ctx.path).map_err(|e| Error::Unzip(ctx.path.to_owned(), e))?;
     let files = find::find_files_rec(extracted.path()).collect();
     Ok(Loaded::Zip {
@@ -200,7 +205,7 @@ pub enum FileType {
 }
 
 impl fmt::Display for FileType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::FileType::*;
         let s = match *self {
             Video => "video",

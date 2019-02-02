@@ -1,11 +1,12 @@
 use std::fmt::{self, Write};
 
-use gtk;
-use gtk::prelude::*;
+use gtk::{self, prelude::*};
 
-use crate::humane_bytes::HumaneBytes;
-use crate::percent::Percent;
-use crate::percent_formatter::{PercentFormatBuf, PercentFormatable};
+use crate::{
+    humane_bytes::HumaneBytes,
+    percent::Percent,
+    percent_formatter::{PercentFormatBuf, PercentFormatable},
+};
 
 #[derive(Debug, Clone)]
 struct ImageInfo {

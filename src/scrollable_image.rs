@@ -1,6 +1,5 @@
 use gdk_pixbuf::{Pixbuf, PixbufAnimation};
-use gtk;
-use gtk::prelude::*;
+use gtk::{self, prelude::*};
 
 pub struct ScrollableImage {
     scroll_view: gtk::ScrolledWindow,

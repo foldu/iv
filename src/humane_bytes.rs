@@ -1,11 +1,15 @@
-use std::convert::{From, TryFrom};
-use std::fmt;
+use std::{
+    convert::{From, TryFrom},
+    fmt,
+};
 
 use failure;
 use num;
-use serde::de::{self, Deserializer, Visitor};
-use serde::ser::Serializer;
-use serde::{Deserialize, Serialize};
+use serde::{
+    de::{self, Deserializer, Visitor},
+    ser::Serializer,
+    Deserialize, Serialize,
+};
 
 use crate::parse::parse_human_readable_bytes;
 
@@ -44,7 +48,7 @@ impl<'a> TryFrom<&'a str> for HumaneBytes {
 }
 
 impl fmt::Display for HumaneBytes {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.0 < 1000 {
             write!(f, "{}B", self.0)
         } else {
@@ -70,7 +74,7 @@ impl<'de> Deserialize<'de> for HumaneBytes {
         impl<'de> Visitor<'de> for HumaneBytesVisitor {
             type Value = HumaneBytes;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("a human readable si number of bytes")
             }
 

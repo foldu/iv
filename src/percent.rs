@@ -1,7 +1,6 @@
-use std::convert::TryFrom;
-use std::fmt;
-use std::ops;
+use std::{convert::TryFrom, fmt, ops};
 
+use failure::Fail;
 use noisy_float::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -13,7 +12,7 @@ use crate::parse::parse_percent;
 pub struct Percent(R64);
 
 impl fmt::Display for Percent {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:.*}%", 2, self.0 * 100.)
     }
 }
@@ -189,7 +188,7 @@ impl<'de> Deserialize<'de> for Percent {
         struct PercentVisitor;
         impl<'de> de::Visitor<'de> for PercentVisitor {
             type Value = Percent;
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("a percentage")
             }
 

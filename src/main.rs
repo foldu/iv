@@ -1,34 +1,8 @@
-#![feature(try_from, nll)]
-#[macro_use]
-extern crate failure;
-extern crate gdk;
-extern crate gdk_pixbuf;
-extern crate gio;
-extern crate gtk;
-extern crate magic;
-extern crate mime;
-extern crate pango;
-extern crate rayon;
-extern crate structopt;
-extern crate toml;
-extern crate walkdir;
-#[macro_use]
-extern crate serde_derive;
-extern crate directories;
-extern crate serde;
-extern crate tempfile;
-extern crate zip;
-#[macro_use]
-extern crate lazy_static;
-extern crate indexmap;
-extern crate noisy_float;
-extern crate num;
-#[macro_use]
-extern crate nom;
+#![feature(try_from)]
 
-use std::path::PathBuf;
-use std::process::exit;
+use std::{path::PathBuf, process::exit};
 
+use failure::format_err;
 use gtk::prelude::*;
 use rayon::prelude::*;
 use structopt::StructOpt;

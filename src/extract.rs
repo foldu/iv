@@ -1,7 +1,10 @@
-use std::fs::{self, File};
-use std::io::{self, BufReader};
-use std::path::Path;
+use std::{
+    fs::{self, File},
+    io::{self, BufReader},
+    path::Path,
+};
 
+use failure::Fail;
 use tempfile::TempDir;
 use zip::{self, ZipArchive};
 

@@ -1,24 +1,25 @@
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::fmt;
-use std::fs;
-use std::io;
-use std::path::PathBuf;
+use std::{collections::HashMap, convert::TryFrom, fmt, fs, io, path::PathBuf};
 
 use directories::BaseDirs;
-use failure;
+use failure::format_err;
 use gdk::ModifierType;
 use gdk_pixbuf::InterpType;
 use gtk;
-use serde::de::{self, Deserializer, Visitor};
-use serde::ser::Serializer;
-use serde::{Deserialize, Serialize};
+use lazy_static::lazy_static;
+use serde::{
+    de::{self, Deserializer, Visitor},
+    ser::Serializer,
+    Deserialize, Serialize,
+};
+use serde_derive::{Deserialize, Serialize};
 use toml;
 
-use crate::humane_bytes::HumaneBytes;
-use crate::keys::{KeyAction, KeyMap, KeyPress};
-use crate::percent::Percent;
-use crate::ratio::Ratio;
+use crate::{
+    humane_bytes::HumaneBytes,
+    keys::{KeyAction, KeyMap, KeyPress},
+    percent::Percent,
+    ratio::Ratio,
+};
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", remote = "InterpType")]
@@ -86,7 +87,7 @@ struct KeyPressVisitor;
 impl<'de> Visitor<'de> for KeyPressVisitor {
     type Value = KeyPress;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         formatter.write_str("a key like `Ctrl-a`")
     }
 

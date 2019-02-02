@@ -1,12 +1,13 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use gdk_pixbuf::PixbufRotation;
 use gtk::prelude::*;
 
-use crate::keys::{KeyAction, KeyMap, KeyPress};
-use crate::scrollable_image::ScrollT;
-use crate::viewer::Viewer;
+use crate::{
+    keys::{KeyAction, KeyMap, KeyPress},
+    scrollable_image::ScrollT,
+    viewer::Viewer,
+};
 impl Viewer {
     pub(in crate::viewer) fn setup(keymap: KeyMap, viewer: &Rc<RefCell<Viewer>>) {
         let clone = viewer.clone();

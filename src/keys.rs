@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde_derive::{Deserialize, Serialize};
+
 #[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 pub struct KeyPress(pub u32);
 

@@ -1,4 +1,4 @@
-use failure;
+use lazy_static::lazy_static;
 use magic::{flags, Cookie, CookieFlags};
 use mime::Mime;
 

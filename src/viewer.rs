@@ -3,21 +3,20 @@ mod setup;
 
 use self::load::load_file;
 
-use std::cell::RefCell;
-use std::path::PathBuf;
-use std::rc::Rc;
+use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
 use failure;
 use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimationExt, PixbufExt, PixbufRotation};
-use gtk;
-use gtk::prelude::*;
+use gtk::{self, prelude::*};
 use tempfile::TempDir;
 
-use crate::bottom_bar::BottomBar;
-use crate::config::{Config, MaxFileSize, WinGeom};
-use crate::percent::Percent;
-use crate::ratio::*;
-use crate::scrollable_image::ScrollableImage;
+use crate::{
+    bottom_bar::BottomBar,
+    config::{Config, MaxFileSize, WinGeom},
+    percent::Percent,
+    ratio::*,
+    scrollable_image::ScrollableImage,
+};
 
 pub struct Viewer {
     win: gtk::Window,
@@ -112,8 +111,7 @@ impl Viewer {
             eprintln!("{}", e);
             e
         })?;
-        use crate::viewer::load::ImageKind;
-        use crate::viewer::load::Loaded::*;
+        use crate::viewer::load::{ImageKind, Loaded::*};
 
         match ret {
             Zip { files, tmp_dir } => {
