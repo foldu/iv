@@ -5,7 +5,7 @@ use std::ops;
 use noisy_float::prelude::*;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-use parse::parse_percent;
+use crate::parse::parse_percent;
 
 /// A percent value. The percentage is never negative or invalid. Subtracting percentages is
 /// bottomed out at 0

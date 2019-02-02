@@ -7,11 +7,11 @@ use gdk_pixbuf::{self, prelude::*, Pixbuf, PixbufAnimation, PixbufLoader};
 use mime;
 use tempfile::TempDir;
 
-use config::MaxFileSize;
-use extract::{tmp_extract_zip, ZipError};
-use find;
-use humane_bytes::HumaneBytes;
-use util::{self, mime_type_buf};
+use crate::config::MaxFileSize;
+use crate::extract::{tmp_extract_zip, ZipError};
+use crate::find;
+use crate::humane_bytes::HumaneBytes;
+use crate::util::{self, mime_type_buf};
 
 type Result<T> = ::std::result::Result<T, Error>;
 type FileSize = u64;

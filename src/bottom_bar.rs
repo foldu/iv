@@ -3,9 +3,9 @@ use std::fmt::{self, Write};
 use gtk;
 use gtk::prelude::*;
 
-use humane_bytes::HumaneBytes;
-use percent::Percent;
-use percent_formatter::{PercentFormatBuf, PercentFormatable};
+use crate::humane_bytes::HumaneBytes;
+use crate::percent::Percent;
+use crate::percent_formatter::{PercentFormatBuf, PercentFormatable};
 
 #[derive(Debug, Clone)]
 struct ImageInfo {

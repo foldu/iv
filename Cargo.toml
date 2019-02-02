@@ -3,6 +3,7 @@ name = "iv"
 version = "0.3.2"
 authors = ["foldu <foldu@protonmail.com>"]
 license = "MIT"
+edition = "2018"
 
 [dependencies]
 rayon = "1.0.3"

@@ -13,11 +13,11 @@ use gtk;
 use gtk::prelude::*;
 use tempfile::TempDir;
 
-use bottom_bar::BottomBar;
-use config::{Config, MaxFileSize, WinGeom};
-use percent::Percent;
-use ratio::*;
-use scrollable_image::ScrollableImage;
+use crate::bottom_bar::BottomBar;
+use crate::config::{Config, MaxFileSize, WinGeom};
+use crate::percent::Percent;
+use crate::ratio::*;
+use crate::scrollable_image::ScrollableImage;
 
 pub struct Viewer {
     win: gtk::Window,
@@ -112,8 +112,8 @@ impl Viewer {
             eprintln!("{}", e);
             e
         })?;
-        use viewer::load::ImageKind;
-        use viewer::load::Loaded::*;
+        use crate::viewer::load::ImageKind;
+        use crate::viewer::load::Loaded::*;
 
         match ret {
             Zip { files, tmp_dir } => {

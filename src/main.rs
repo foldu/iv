@@ -48,7 +48,7 @@ mod scrollable_image;
 mod util;
 mod viewer;
 
-use viewer::Viewer;
+use crate::viewer::Viewer;
 
 fn run() -> Result<(), failure::Error> {
     let opt = Opt::from_args();

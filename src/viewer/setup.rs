@@ -4,11 +4,11 @@ use std::rc::Rc;
 use gdk_pixbuf::PixbufRotation;
 use gtk::prelude::*;
 
-use keys::{KeyAction, KeyMap, KeyPress};
-use scrollable_image::ScrollT;
-use viewer::Viewer;
+use crate::keys::{KeyAction, KeyMap, KeyPress};
+use crate::scrollable_image::ScrollT;
+use crate::viewer::Viewer;
 impl Viewer {
-    pub(in viewer) fn setup(keymap: KeyMap, viewer: &Rc<RefCell<Viewer>>) {
+    pub(in crate::viewer) fn setup(keymap: KeyMap, viewer: &Rc<RefCell<Viewer>>) {
         let clone = viewer.clone();
         viewer
             .borrow_mut()

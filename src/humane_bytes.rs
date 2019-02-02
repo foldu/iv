@@ -7,7 +7,7 @@ use serde::de::{self, Deserializer, Visitor};
 use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 
-use parse::parse_human_readable_bytes;
+use crate::parse::parse_human_readable_bytes;
 
 #[derive(Debug, Clone, Copy)]
 pub struct HumaneBytes(u64);

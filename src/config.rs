@@ -15,10 +15,10 @@ use serde::ser::Serializer;
 use serde::{Deserialize, Serialize};
 use toml;
 
-use humane_bytes::HumaneBytes;
-use keys::{KeyAction, KeyMap, KeyPress};
-use percent::Percent;
-use ratio::Ratio;
+use crate::humane_bytes::HumaneBytes;
+use crate::keys::{KeyAction, KeyMap, KeyPress};
+use crate::percent::Percent;
+use crate::ratio::Ratio;
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case", remote = "InterpType")]

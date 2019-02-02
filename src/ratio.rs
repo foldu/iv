@@ -7,7 +7,7 @@ use gtk::{self, prelude::*};
 use num::{FromPrimitive, ToPrimitive};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-use percent::Percent;
+use crate::percent::Percent;
 
 /// A ratio. Can be used for more than just correct aspect ratio transforms.
 #[derive(Debug, Copy, Clone)]
