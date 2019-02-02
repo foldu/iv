@@ -157,7 +157,7 @@ impl Default for Config {
 }
 
 lazy_static! {
-    static ref CONFIG_PATH: PathBuf = BaseDirs::new().config_dir().join("iv.toml");
+    static ref CONFIG_PATH: PathBuf = BaseDirs::new().unwrap().config_dir().join("iv.toml");
 }
 
 pub fn load() -> Result<Config, failure::Error> {
@@ -178,7 +178,8 @@ pub fn write_default() -> Result<Config, failure::Error> {
     fs::write(
         CONFIG_PATH.as_path(),
         toml::to_string_pretty(&ret).expect("Can't deserialize default config"),
-    ).map_err(|e| format_err!("Can't write default config: {}", e))?;
+    )
+    .map_err(|e| format_err!("Can't write default config: {}", e))?;
     eprintln!("Default config written to {:?}", CONFIG_PATH.as_path());
     Ok(ret)
 }

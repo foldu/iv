@@ -56,10 +56,7 @@ macro_rules! derive_from {
 
 #[derive(Fail, Debug, Clone)]
 pub enum PercentError {
-    #[fail(
-        display = "Can't create negative percentages: {} is negative",
-        _0
-    )]
+    #[fail(display = "Can't create negative percentages: {} is negative", _0)]
     IsNegative(i64),
     #[fail(display = "Can't create percentage from this float: {}", _0)]
     InvalidFloat(f64),

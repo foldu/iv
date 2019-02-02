@@ -268,7 +268,8 @@ impl Viewer {
             &self.win,
             self.initial_geom.ratio,
             self.initial_geom.scaling,
-        ).unwrap();
+        )
+        .unwrap();
         self.win.resize(optimal.0, optimal.1);
     }
 

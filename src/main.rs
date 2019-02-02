@@ -5,14 +5,13 @@ extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate gio;
 extern crate gtk;
-extern crate pango;
-extern crate rayon;
-extern crate walkdir;
-#[macro_use]
-extern crate structopt;
 extern crate magic;
 extern crate mime;
+extern crate pango;
+extern crate rayon;
+extern crate structopt;
 extern crate toml;
+extern crate walkdir;
 #[macro_use]
 extern crate serde_derive;
 extern crate directories;

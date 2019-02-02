@@ -25,7 +25,8 @@ impl<'a> TryFrom<&'a str> for Ratio {
             } else {
                 Some(Ratio(a, b))
             }
-        })().ok_or("Expecting f64xf64")
+        })()
+        .ok_or("Expecting f64xf64")
     }
 }
 
