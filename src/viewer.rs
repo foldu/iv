@@ -6,7 +6,7 @@ use self::load::load_file;
 use std::{cell::RefCell, path::PathBuf, rc::Rc};
 
 use failure;
-use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimationExt, PixbufExt, PixbufRotation};
+use gdk_pixbuf::{InterpType, Pixbuf, PixbufAnimationExt, PixbufRotation};
 use gtk::{self, prelude::*};
 use tempfile::TempDir;
 
@@ -58,7 +58,7 @@ impl Viewer {
         // explain yourselves
         win.set_wmclass("iv", "iv");
 
-        win.set_icon_name("emblem-photos");
+        win.set_icon_name(Some("emblem-photos"));
 
         let img = ScrollableImage::new(config.scrollbars);
         let bottom = BottomBar::new(&config.bottom_format);

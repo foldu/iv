@@ -8,7 +8,7 @@ pub struct ScrollableImage {
 
 impl ScrollableImage {
     pub fn new(with_scrollbars: bool) -> ScrollableImage {
-        let scroll_view = gtk::ScrolledWindow::new(None, None);
+        let scroll_view = gtk::ScrolledWindow::new::<gtk::Adjustment, gtk::Adjustment>(None, None);
         let image = gtk::Image::new();
         scroll_view.add(&image);
         if !with_scrollbars {
@@ -27,7 +27,7 @@ impl ScrollableImage {
     }
 
     pub fn set_from_pixbuf(&self, buf: &Pixbuf) {
-        self.image.set_from_pixbuf(buf)
+        self.image.set_from_pixbuf(Some(buf))
     }
 
     pub fn as_widget(&self) -> &gtk::ScrolledWindow {

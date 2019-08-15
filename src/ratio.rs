@@ -1,6 +1,5 @@
 use std::{convert::TryFrom, fmt, ops};
 
-use gdk::ScreenExt;
 use gtk::{self, prelude::*};
 use num::{FromPrimitive, ToPrimitive};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
